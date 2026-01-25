@@ -1217,11 +1217,10 @@ void elimLeftSafe() {
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() { 
-    chassis.setPose(0,0,0);
-    pros::Task debug(print_pos);
-    
-    chassis.moveToPoint(0,25, 10000000, {}, false);
-
+    chassis.setPose(-48,0,90);
+    pros::Task debug(logData);
+    chassis.moveToPose(-22.56, 25.711, 13.75, 1400);
+    chassis.waitUntilDone();
 }
 
 /**
@@ -1234,13 +1233,14 @@ void opcontrol() {
     // pros::Task debug(print_pos); // TODO uncomment this
     pros::Task logPos(logData);
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
+    chassis.setPose(-48, 0, 90);
     while (true) {
         // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
-        
+
         // check controller input and move intake accordingly
         intake.runIntake();
         // if (score_toggle.buttonState) {
