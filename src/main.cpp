@@ -38,20 +38,20 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(13, // proportional gain (kP)
-                                              -0.004, // integral gain (kI)
-                                              20, // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in inches
-                                              80, // small error range timeout, in milliseconds
-                                              3, // large error range, in inches
-                                              180, // large error range timeout, in milliseconds
+lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                            9,// derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 // angular PID controller
-lemlib::ControllerSettings angularController(2.3, // proportional gain (kP)
+lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
                                                0, // integral gain (kI)
-                                               22, // derivative gain (kD)
+                                               29, // derivative gain (kD)
                                                0, // anti windup
                                                0, // small error range, in degrees
                                                0, // small error range timeout, in milliseconds
@@ -209,6 +209,14 @@ void print_pos() {
         pros::screen::print(pros::E_TEXT_MEDIUM, 6, buf6);
         pros::screen::print(pros::E_TEXT_MEDIUM, 7, buf7);
 
+        pros::delay(50);
+    }
+}
+
+void logData(){
+    while(true){
+        lemlib::Pose pos = chassis.getPose();
+        printf("%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.theta);
         pros::delay(50);
     }
 }
@@ -1212,7 +1220,7 @@ void autonomous() {
     chassis.setPose(0,0,0);
     pros::Task debug(print_pos);
     
-    chassis.turnToHeading(90,500000,{},false);
+    chassis.moveToPoint(0,25, 10000000, {}, false);
 
 }
 
@@ -1223,7 +1231,8 @@ void opcontrol() {
     // // robot.color_sort = true; // enable color sorting for now
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // make sure not braked from previous auton(could be braked holding
     //                                                  // control zone in long goal)
-    pros::Task debug(print_pos); // TODO uncomment this
+    // pros::Task debug(print_pos); // TODO uncomment this
+    pros::Task logPos(logData);
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
     while (true) {
         // get joystick positions
@@ -1231,7 +1240,7 @@ void opcontrol() {
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
-
+        
         // check controller input and move intake accordingly
         intake.runIntake();
         // if (score_toggle.buttonState) {
