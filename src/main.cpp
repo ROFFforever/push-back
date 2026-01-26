@@ -149,6 +149,7 @@ void reset_robot() {
 }
 
 void communications() {
+    while(true){
         std::string input_data;
         // Listen for data from the PC
         if (std::cin >> input_data) {
@@ -170,6 +171,7 @@ void communications() {
             }
         }
         wait(20); // keep at 50hz
+    }
 }
 
 /**
@@ -179,8 +181,8 @@ void communications() {
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-    chassis.leftMotorVolts=500;
-    chassis.rightMotorVolts=1000;
+    // chassis.leftMotorVolts=500;
+    // chassis.rightMotorVolts=1000;
 }
 
 /**
@@ -261,9 +263,7 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
-    while (true) {
-        communications();
-    }
+    pros::Task c(communications);
 
     wait(1000000); // can never stop
 }
