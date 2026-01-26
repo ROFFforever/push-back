@@ -5,10 +5,8 @@
 #include "pushback/api.hpp"
 
 #include <cstdio>
-#include <unistd.h>   
+#include <unistd.h>
 #include "pros/apix.h"
-
-
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -45,27 +43,26 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 
 // lateral motion controller
 lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
-                                              0, // integral gain (kI)
-                                            9,// derivative gain (kD)
-                                              0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                            0, // integral gain (kI)
+                                            9, // derivative gain (kD)
+                                            0, // anti windup
+                                            0, // small error range, in inches
+                                            0, // small error range timeout, in milliseconds
+                                            0, // large error range, in inches
+                                            0, // large error range timeout, in milliseconds
+                                            0 // maximum acceleration (slew)
 );
 // angular PID controller
 lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
-                                               0, // integral gain (kI)
-                                               29, // derivative gain (kD)
-                                               0, // anti windup
-                                               0, // small error range, in degrees
-                                               0, // small error range timeout, in milliseconds
-                                               0, // large error range, in degrees
-                                               0, // large error range timeout, in milliseconds
-                                               0 // maximum acceleration (slew)
+                                             0, // integral gain (kI)
+                                             29, // derivative gain (kD)
+                                             0, // anti windup
+                                             0, // small error range, in degrees
+                                             0, // small error range timeout, in milliseconds
+                                             0, // large error range, in degrees
+                                             0, // large error range timeout, in milliseconds
+                                             0 // maximum acceleration (slew)
 );
-
 
 // sensors for odometry
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
@@ -150,22 +147,30 @@ void reset_robot() {
         wait(20); // wait as to not hog CPU resources
     }
 }
-void recieve_data(){
-      std::string input_data;
-    // Optional: Clear the screen once at the start
-    pros::screen::erase();
 
-    while (true) {
+void communications() {
+        std::string input_data;
         // Listen for data from the PC
         if (std::cin >> input_data) {
-          std::cout << "Brain received: " << input_data << std::endl;
+        std::string power = std::to_string(chassis.leftMotorVolts) + "," + 
+                    std::to_string(chassis.rightMotorVolts);
+            std::cout << power << std::endl; // response
             pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Data: %s", input_data.c_str());
+            float new_x, new_y, new_theta;
+
+            // Parse the buffer using the "float,float,float" format
+            int fields_found = sscanf(input_data.c_str(), "%f,%f,%f", &new_x, &new_y, &new_theta);
+
+            // Always verify that all three numbers were successfully found
+            if (fields_found == 3) {
+                chassis.setPose(new_x, new_y, new_theta * (180.0 / M_PI));
+            } else {
+                // Optional: Log an error if the data was malformed
+                printf("Error: Only parsed %d fields from: %s\n", fields_found, input_data);
+            }
         }
-        wait(20);
-    }
-
+        wait(20); // keep at 50hz
 }
-
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -174,6 +179,8 @@ void recieve_data(){
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
+    chassis.leftMotorVolts=500;
+    chassis.rightMotorVolts=1000;
 }
 
 /**
@@ -230,26 +237,21 @@ void print_pos() {
     }
 }
 
-void logData(){
-    while(true){
+void logData() {
+    while (true) {
         lemlib::Pose pos = chassis.getPose();
         printf("%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.theta);
-        pros::delay(20); //20 ms delay
+        pros::delay(20); // 20 ms delay
     }
 }
-
-
-
-
-
 
 /**
  * Runs during auto
  *
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
-void autonomous() { 
-    chassis.setPose(-48,0,90);
+void autonomous() {
+    chassis.setPose(-48, 0, 90);
     pros::Task debug(logData);
     chassis.moveToPose(-22.56, 25.711, 13.75, 1400);
     chassis.waitUntilDone();
@@ -259,7 +261,9 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
-    pros::Task t(recieve_data);
-    
-    wait(1000000); //can never stop
+    while (true) {
+        communications();
+    }
+
+    wait(1000000); // can never stop
 }

@@ -22,7 +22,7 @@ try:
         # Read the confirmation from the Brain
         response = ser.readline().decode().strip()
         if response:
-            print(f"Response: {response}")
+            print(f"Response: {response.replace("out", "")}")
 
         time.sleep(0.05) # Don't flood the Brain too fast 25hz shoulod be 
 

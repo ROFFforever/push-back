@@ -144,17 +144,25 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
             rightPower /= ratio;
         }
 
-        // move the drivetrain
-        drivetrain.leftMotors->move(leftPower);
-        drivetrain.rightMotors->move(rightPower);
+        // move the drivetrain, no motors connected so data to PC for processing
+        // drivetrain.leftMotors->move(leftPower);
+        // drivetrain.rightMotors->move(rightPower);
+
+        //set voltages
+        leftMotorVolts = leftPower;
+        rightMotorVolts = rightPower;
 
         // delay to save resources
         pros::delay(10);
     }
 
     // stop the drivetrain
-    drivetrain.leftMotors->move(0);
-    drivetrain.rightMotors->move(0);
+    // drivetrain.leftMotors->move(0);
+    // drivetrain.rightMotors->move(0);
+
+    //stop it
+        leftMotorVolts = 0;
+        rightMotorVolts = 0;
     // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
     this->endMotion();
