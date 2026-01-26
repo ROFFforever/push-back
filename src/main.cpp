@@ -23,10 +23,10 @@ pros::Imu imu(12);
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
 pros::Rotation horizontalEnc(10);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
-pros::Rotation verticalEnc(9);
+pros::Rotation verticalEnc(3);
 lemlib::TrackingWheel horizontal(&horizontalEnc, 2.0, 0);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, 2.0, 0);
+lemlib::TrackingWheel vertical(&verticalEnc, 2.0, 0.5);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
@@ -42,27 +42,27 @@ lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
                                               0, // integral gain (kI)
                                             9,// derivative gain (kD)
                                               0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              15 // maximum acceleration (slew)
 );
 // angular PID controller
 lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
                                                0, // integral gain (kI)
                                                29, // derivative gain (kD)
                                                0, // anti windup
-                                               0, // small error range, in degrees
-                                               0, // small error range timeout, in milliseconds
-                                               0, // large error range, in degrees
-                                               0, // large error range timeout, in milliseconds
-                                               0 // maximum acceleration (slew)
+                                               1, // small error range, in degrees
+                                               150, // small error range timeout, in milliseconds
+                                               3, // large error range, in degrees
+                                               600, // large error range timeout, in milliseconds
+                                               20 // maximum acceleration (slew)
 );
 
 
 // sensors for odometry
-lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
+lemlib::OdomSensors sensors(&vertical, // vertical tracking wheel
                             nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
                             nullptr, // horizontal tracking wheel
                             nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
@@ -1217,10 +1217,10 @@ void elimLeftSafe() {
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() { 
-    chassis.setPose(-48,0,90);
-    pros::Task debug(logData);
-    chassis.moveToPose(-22.56, 25.711, 13.75, 1400);
+    pros::Task debug(print_pos); 
+    chassis.moveToPoint(0,15, 10020);
     chassis.waitUntilDone();
+    real_brake();
 }
 
 /**
@@ -1230,8 +1230,7 @@ void opcontrol() {
     // // robot.color_sort = true; // enable color sorting for now
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // make sure not braked from previous auton(could be braked holding
     //                                                  // control zone in long goal)
-    // pros::Task debug(print_pos); // TODO uncomment this
-    pros::Task logPos(logData);
+    pros::Task debug(print_pos); // TODO uncomment this
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
     chassis.setPose(-48, 0, 90);
     while (true) {
