@@ -2,8 +2,8 @@ import serial
 import time
 import random
 
-USER_PORT = 'COM5' 
-BAUD_RATE = 115200
+USER_PORT = 'COM5' #com thingy
+BAUD_RATE = 115200 #how fast data can be sent over
 
 try:
     # Open the port ONCE outside the loop
@@ -24,7 +24,7 @@ try:
         if response:
             print(f"Response: {response}")
 
-        time.sleep(0.05) # Don't flood the Brain too fast
+        time.sleep(0.05) # Don't flood the Brain too fast 25hz shoulod be 
 
 except Exception as e:
     print(f"Error: {e}")
