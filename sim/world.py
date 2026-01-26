@@ -11,7 +11,7 @@ hertz = 50.0 #50hz
 
 # Robot Physicals (Matching your LemLib config)
 TRACK_WIDTH = 10.8
-MAX_VOLTS = 12000
+MAX_VOLTS = 127
 DRIVETRAIN_RPM = 450
 WHEEL_DIAMETER = 3.25
 MAX_SPEED_IPS = (DRIVETRAIN_RPM / 60.0) * (math.pi * WHEEL_DIAMETER)

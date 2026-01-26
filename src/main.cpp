@@ -264,6 +264,6 @@ void autonomous() {
  */
 void opcontrol() {
     pros::Task c(communications);
-
+    chassis.moveToPose(10,10,90, 120000);
     wait(1000000); // can never stop
 }
