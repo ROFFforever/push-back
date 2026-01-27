@@ -14,9 +14,9 @@ from datetime import datetime
 LOG_FILE = "logs.txt"
 ARCHIVE_DIR = "oldLogs"
 FIELD_IMAGE = "field.png"
-TIME_STEP = 0.05     
-ROBOT_SIZE_IN = 12   
-POINT_SIZE = 25  
+TIME_STEP = 0.05
+ROBOT_SIZE_IN = 12
+POINT_SIZE = 25
 
 def copy_to_archive():
     if not os.path.exists(LOG_FILE): return
@@ -35,14 +35,12 @@ def load_and_calculate():
     x, y, h = [], [], []
     if not os.path.exists(LOG_FILE): return None
     try:
-        # Support UTF-16 (Common in Windows) and UTF-8
         try:
             with open(LOG_FILE, 'r', encoding='utf-16') as f:
                 lines = f.readlines()
         except:
             with open(LOG_FILE, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-        
         for line in lines:
             line = line.strip().replace('\ufeff', '').replace('X:', '').replace('Y:', '').replace('Heading:', '')
             if not line: continue
@@ -52,7 +50,6 @@ def load_and_calculate():
     except Exception as e:
         print(f"File Load Error: {e}")
         return None
-
     if len(x) < 2: return None
     x_arr, y_arr, h_arr = np.array(x), np.array(y), np.array(h)
     v = np.sqrt(np.gradient(x_arr, TIME_STEP)**2 + np.gradient(y_arr, TIME_STEP)**2)
@@ -65,24 +62,23 @@ if data:
     x, y, h, v, accel = data
     fig, ax = plt.subplots(figsize=(10, 9))
     plt.subplots_adjust(left=0.07, right=0.88, top=0.92, bottom=0.15)
-
+    
     try:
         img = mpimg.imread(FIELD_IMAGE)
         ax.imshow(img, extent=[-72, 72, -72, 72], alpha=0.6, zorder=1)
-    except: ax.set_facecolor('#111111')
-
+    except:
+        ax.set_facecolor('#111111')
+    
     ax.plot(x, y, color='cyan', linewidth=1, alpha=0.3, zorder=2)
     points = ax.scatter(x, y, c=v, cmap='plasma', s=POINT_SIZE, alpha=0.7, zorder=3, picker=True)
-
-    ghost_robot = Rectangle((-ROBOT_SIZE_IN/2, -ROBOT_SIZE_IN/2), 
-                             ROBOT_SIZE_IN, ROBOT_SIZE_IN, 
-                             alpha=0.5, color='orange', zorder=5)
+    
+    ghost_robot = Rectangle((-ROBOT_SIZE_IN/2, -ROBOT_SIZE_IN/2), ROBOT_SIZE_IN, ROBOT_SIZE_IN, 
+                            alpha=0.5, color='orange', zorder=5)
     ax.add_patch(ghost_robot)
     ghost_robot.set_visible(False)
-
-    timer_text = ax.text(0.95, 0.95, 'Time: 0.00s', transform=ax.transAxes, 
-                         fontsize=12, fontweight='bold', color='white',
-                         bbox=dict(facecolor='black', alpha=0.5), ha='right')
+    
+    timer_text = ax.text(0.95, 0.95, 'Time: 0.00s', transform=ax.transAxes, fontsize=12, 
+                         fontweight='bold', color='white', bbox=dict(facecolor='black', alpha=0.5), ha='right')
 
     class PlaybackController:
         def __init__(self):
@@ -90,11 +86,14 @@ if data:
             self.is_paused = True
             self.started = False
             self.init_animation()
+            # Set initial position but keep hidden/stopped
+            self.update(0)
 
         def init_animation(self):
+            # repeat=False and explicit stop prevents auto-start
             self.ani = FuncAnimation(fig, self.update, frames=len(x), 
-                                    interval=TIME_STEP*1000, repeat=False, blit=True)
-            self.ani.pause()
+                                     interval=TIME_STEP*1000, repeat=False, blit=False)
+            self.ani.event_source.stop() 
 
         def update(self, frame):
             idx = int(frame)
@@ -105,43 +104,35 @@ if data:
             
             if self.started:
                 timer_text.set_text(f"Time: {min(idx * TIME_STEP, (len(x)-1)*TIME_STEP):.2f}s")
-
+                
             if idx >= len(x) - 1:
                 self.ani.event_source.stop()
                 self.is_paused = True
                 self.started = False
                 btn_play.label.set_text('▶ Play')
-                
             return ghost_robot, timer_text
 
         def toggle(self, event):
-            # Check if we are at the end
-            current_time_val = float(timer_text.get_text().replace('Time: ', '').replace('s', ''))
-            if current_time_val >= (len(x)-1) * TIME_STEP:
-                self.stop(None)
-            
             if self.is_paused:
                 self.started = True
-                self.ani.resume()
+                self.ani.event_source.start()
                 btn_play.label.set_text('|| Pause')
             else:
-                self.ani.pause()
+                self.ani.event_source.stop()
                 btn_play.label.set_text('▶ Resume')
             self.is_paused = not self.is_paused
             fig.canvas.draw_idle()
 
         def stop(self, event):
-            if self.ani: self.ani.event_source.stop()
+            self.ani.event_source.stop()
             self.is_paused = True
             self.started = False
             btn_play.label.set_text('▶ Play')
             timer_text.set_text('Time: 0.00s')
-            self.init_animation()
             self.update(0)
             fig.canvas.draw_idle()
 
     controller = PlaybackController()
-
     ax_play = plt.axes([0.38, 0.02, 0.12, 0.05])
     ax_stop = plt.axes([0.52, 0.02, 0.1, 0.05])
     btn_play = Button(ax_play, '▶ Play', color='#222222', hovercolor='#333333')
@@ -157,14 +148,21 @@ if data:
     annot.set_visible(False)
 
     def on_pick(event):
-        # FIX: Extract integer from numpy array returned by event.ind
+        # Correctly grab index from the event
         idx = int(event.ind[0])
+        
+        # Stop animation so user can inspect the point
         if not controller.is_paused:
-            controller.toggle(None) 
+            controller.toggle(None)
+        
+        # Force robot highlight at this point
         controller.update(idx)
+        
+        # Update annotation text
         annot.xy = [x[idx], y[idx]]
-        annot.set_text(f"Point: {idx}\nV: {v[idx]:.1f} in/s\nTime: {idx*TIME_STEP:.2f}s")
+        annot.set_text(f"X: {x[idx]:.2f}\nY: {y[idx]:.2f}\nθ: {h[idx]:.1f}°")
         annot.set_visible(True)
+        
         fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("pick_event", on_pick)
