@@ -23,7 +23,7 @@ pros::Imu imu(12);
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
 pros::Rotation horizontalEnc(10);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
-pros::Rotation verticalEnc(3);
+pros::Rotation verticalEnc(9);
 lemlib::TrackingWheel horizontal(&horizontalEnc, 2.0, 0);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
 lemlib::TrackingWheel vertical(&verticalEnc, 2.0, 0);
@@ -261,7 +261,7 @@ void left_side_red() {
 void skills() {
 
     // Starting Position
-    lemlib::Pose start_pose(-47.25, 15.5, 90);
+    lemlib::Pose start_pose(-47.25, 16.3, 90);
 
     // #1
     chassis.setPose(-47, 16.3, 90);
@@ -285,7 +285,7 @@ void skills() {
     wait(1400); // give time to score
     intake.outake(); // finished
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    chassis.moveToPose(-53.318, 45.6, -90, 1400, {.lead = 0.3}, true); // go towards matchloaders
+    chassis.moveToPose(-53.318, 45, -90, 1400, {.lead = 0.3}, true); // go towards matchloaders
     wait(300);
     unloader.firePiston(true); // Piston down to unload matchloads
     wait(150);
@@ -326,17 +326,21 @@ void skills() {
     chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_left_side()+0.4, chassis.getPose().theta); // reset
     rb(100);
     chassis.turnToHeading(58, 500, {}, false);
-    chassis.moveToPose(35, 48, 90, 1300, {.forwards = false, .lead=0.35},
-                       false); // get into goal
-    chassis.turnToHeading(90, 200);
-    // robot.ram(-100, 300); // get into goal alligner
-    // intake.intake();
-    // score_toggle.firePiston(true); // open up scoring hood
-    // robot.ram(-90, 2100); // move back to get into alligner/goal and score
-    // rb(100);
-    // float angError = fabs(chassis.getPose().theta - 90);
-    // chassis.setPose(28, 46.8,
-    //                 angError < 3.5 ? 90 : chassis.getPose().theta); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
+    chassis.moveToPose(33, 46, 90, 1300, {.forwards = false, .lead=0.35, .minSpeed=50, .earlyExitRange=0.3},
+                       true); // get into goal
+    while(chassis.getPose().y > 51.2){ //while not alligned keep waiting, want it to turn at y=48 but due to drift have to unforunately add 3.5 inches as approx
+        wait(10);
+    }
+    chassis.cancelMotion();
+    chassis.turnToHeading(90, 550, {.minSpeed=50, .earlyExitRange=1}, false);
+    robot.ram(-100, 300); // get into goal alligner
+    intake.intake();
+    score_toggle.firePiston(true); // open up scoring hood
+    robot.ram(-90, 2100); // move back to get into alligner/goal and score
+    rb(100);
+    float angError = fabs(chassis.getPose().theta - 90);
+    chassis.setPose(28, 46.8,
+                    angError < 5 ? 90 : chassis.getPose().theta); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
     
     
                     // chassis.moveToPose(37.6, 47, 90, 900, {.lead = 0.3, .minSpeed = 55, .earlyExitRange = 0.5},
@@ -474,7 +478,7 @@ void skills() {
     // robot.ram(75, 900);
     // wait(200);
     // robot.ram(97, 1300); // cross
-
+    intake.outake();
      //// DONE :) 97 potential points
 }
 
@@ -1237,6 +1241,8 @@ void autonomous() {
     pros::Task log(logData);
     //pros::Task debug(print_pos); 
     skills();
+
+
 }
 
 /**
