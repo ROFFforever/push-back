@@ -17,9 +17,10 @@ Intake::Intake(Robot& robot)
 void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
-            robot.intake_1->move_voltage(9000);
-            robot.intake_2->move_voltage(-9000);
-            robot.intake_3->move_voltage(-9000);
+            robot.intake_1->move_voltage(7000);
+            robot.intake_2->move_voltage(-7000);
+            robot.intake_3->move_voltage(-7000);
+            //4000 for midle goal in skills
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) { // outake
             robot.intake_1->move_voltage(-12000);
