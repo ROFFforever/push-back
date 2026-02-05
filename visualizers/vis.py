@@ -1,154 +1,74 @@
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-from matplotlib.patches import Rectangle
-from matplotlib.transforms import Affine2D
-from matplotlib.animation import FuncAnimation
-from matplotlib.widgets import Button
 import os
 import shutil
 import filecmp
 from datetime import datetime
 
-# --- SETTINGS ---
+#all the settings
 LOG_FILE = "logs.txt"
-ARCHIVE_DIR = "oldLogs"
+ARCHIVE_DIR = "oldLogs" #path relative to current dir
 FIELD_IMAGE = "field.png"
 TIME_STEP = 0.05
-ROBOT_SIZE_IN = 12
+ROBOT_SIZE_IN = 12 #doesn't really matter that much, just for the visualization
 POINT_SIZE = 25
 
+#in order to save past runs and see whats different
 def copy_to_archive():
     if not os.path.exists(LOG_FILE): return
-    if not os.path.exists(ARCHIVE_DIR): os.makedirs(ARCHIVE_DIR)
-    is_duplicate = False
+    if not os.path.exists(ARCHIVE_DIR): os.makedirs(ARCHIVE_DIR) #make sure the archive_dir exists
+    is_duplicate = False #chcek for duplicate path already saved(but name different)
     for existing_file in os.listdir(ARCHIVE_DIR):
-        existing_path = os.path.join(ARCHIVE_DIR, existing_file)
-        if os.path.isfile(existing_path) and filecmp.cmp(LOG_FILE, existing_path, shallow=False):
+        existing_path = os.path.join(ARCHIVE_DIR, existing_file) #path of a file or potentially a folder
+        if os.path.isfile(existing_path) and filecmp.cmp(LOG_FILE, existing_path, shallow=False): #make sure not comparing folder to a file(hence the os.path.isfile()). Then compare file data to new log file to make sure it's not duplicate
             is_duplicate = True
-            break
+            break #no need to copy if duplicate
     if not is_duplicate:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        shutil.copy2(LOG_FILE, os.path.join(ARCHIVE_DIR, f"oldLog_{timestamp}.txt"))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") #save file as the current date and time
+        shutil.copy2(LOG_FILE, os.path.join(ARCHIVE_DIR, f"oldLog_{timestamp}.txt")) #copy the log file into archive
+
 
 def load_and_calculate():
-    x, y, h = [], [], []
+    x, y, h = [], [], [] #define our array of x,y,theta values
     if not os.path.exists(LOG_FILE): return None
     try:
-        try:
+        try: #try reading with encoding utf-16
             with open(LOG_FILE, 'r', encoding='utf-16') as f: lines = f.readlines()
-        except:
+        except: #if its not encoded using utf-16 try reading with encoding utf-8
             with open(LOG_FILE, 'r', encoding='utf-8') as f: lines = f.readlines()
         for line in lines:
-            line = line.strip().replace('\ufeff', '').replace('X:', '').replace('Y:', '').replace('Heading:', '')
+            line = line.strip().replace('\ufeff', '') #Remove the BOM character if present(sometimes appears in utf-8 files)
             if not line: continue
-            parts = [float(p) for p in line.split(',')]
-            if len(parts) >= 3: x.append(parts[0]); y.append(parts[1]); h.append(parts[2])
-    except Exception as e:
+            parts = [float(p) for p in line.split(',')] #store as float values in array
+            if len(parts) >= 3: x.append(parts[0]); y.append(parts[1]); h.append(parts[2]) #add respective values to arrays
+    except Exception as e: #if ran into any other error loading file
         print(f"File Load Error: {e}")
         return None
-    if len(x) < 2: return None
-    x_arr, y_arr, h_arr = np.array(x), np.array(y), np.array(h)
-    v = np.sqrt(np.gradient(x_arr, TIME_STEP)**2 + np.gradient(y_arr, TIME_STEP)**2)
-    accel = np.gradient(v, TIME_STEP)
-    copy_to_archive()
-    return x_arr, y_arr, h_arr, v, accel
+    if len(x) < 2: return None #need at least 2 data points to calculate velocity and acceleration
+    x_arr, y_arr, h_arr = np.array(x), np.array(y), np.array(h) #use numpy arrays for faster and easier calculations
+    v = np.sqrt(np.gradient(x_arr, TIME_STEP)**2 + np.gradient(y_arr, TIME_STEP)**2) #calculate velocity of robot using --> sqrt(dx/dt^2 + dy/dt^2), basically the hypotenuse of the triangle formed by dx and dy
+    #TIME_STEP defines the interval over which the derivative will be calculated, less is more accurate, but 0.05 is good enough
+    #np.gradient calculates derivative of the numpy arrays
+    accel = np.gradient(v, TIME_STEP) #take derivative of velocity using TIME_STEP as our interval to get acceleration 
+    copy_to_archive() #archive  now that we know it's a legit log file
+    return x_arr, y_arr, h_arr, v, accel #return all calculated data
 
-data = load_and_calculate()
-if data:
+#PROGRAM STARTS HERE
+data = load_and_calculate() #get calculated points
+if data: #make sure data exists/loaded properly
     x, y, h, v, accel = data
-    fig, ax = plt.subplots(figsize=(10, 9))
-    plt.subplots_adjust(left=0.07, right=0.88, top=0.92, bottom=0.15)
+    fig, ax = plt.subplots(figsize=(10, 9)) #fig is the main window, ax is the field area with points
+    plt.subplots_adjust(left=0.07, right=0.88, top=0.92, bottom=0.15) #make room for buttons and place it comfortably
     try:
         img = mpimg.imread(FIELD_IMAGE)
-        ax.imshow(img, extent=[-72, 72, -72, 72], alpha=0.6, zorder=1)
+        ax.imshow(img, extent=[-72, 72, -72, 72], alpha=0.6, zorder=1) #set field imgae to be 144x144 just like real world + slightly transparent for better visibility of points
     except:
-        ax.set_facecolor('#111111')
+        ax.set_facecolor('#111111') #in case field fails to load set this to background color
     
-    ax.plot(x, y, color='cyan', linewidth=1, alpha=0.3, zorder=2)
-    points = ax.scatter(x, y, c=v, cmap='plasma', s=POINT_SIZE, alpha=0.7, zorder=3, picker=True)
-    
-    ghost_robot = Rectangle((-ROBOT_SIZE_IN/2, -ROBOT_SIZE_IN/2), ROBOT_SIZE_IN, ROBOT_SIZE_IN, alpha=0.5, color='orange', zorder=5)
-    ax.add_patch(ghost_robot)
-    ghost_robot.set_visible(False)
-    
-    timer_text = ax.text(0.95, 0.95, 'Time: 0.00s', transform=ax.transAxes, fontsize=12, fontweight='bold', color='white', bbox=dict(facecolor='black', alpha=0.5), ha='right')
-
-    class PlaybackController:
-        def __init__(self):
-            self.ani = None
-            self.is_paused = True
-            self.started = False
-            self.init_animation()
-            self.update(0)
-
-        def init_animation(self):
-            # FIXED: blit=True makes the animation significantly faster by only redrawing moving parts
-            self.ani = FuncAnimation(fig, self.update, frames=len(x), interval=TIME_STEP*1000, repeat=False, blit=True)
-            self.ani.event_source.stop()
-
-        def update(self, frame):
-            idx = int(frame)
-            ghost_robot.set_visible(True)
-            ghost_robot.set_xy([x[idx] - ROBOT_SIZE_IN/2, y[idx] - ROBOT_SIZE_IN/2])
-            transform = Affine2D().rotate_deg_around(x[idx], y[idx], 90 - h[idx]) + ax.transData
-            ghost_robot.set_transform(transform)
-            
-            if self.started:
-                timer_text.set_text(f"Time: {min(idx * TIME_STEP, (len(x)-1)*TIME_STEP):.2f}s")
-            
-            if idx >= len(x) - 1:
-                self.ani.event_source.stop()
-                self.is_paused = True
-                self.started = False
-                btn_play.label.set_text('▶ Play')
-                
-            return ghost_robot, timer_text
-
-        def toggle(self, event):
-            if self.is_paused:
-                self.started = True
-                self.ani.event_source.start()
-                btn_play.label.set_text('|| Pause')
-            else:
-                self.ani.event_source.stop()
-                btn_play.label.set_text('▶ Resume')
-            self.is_paused = not self.is_paused
-
-        def stop(self, event):
-            self.ani.event_source.stop()
-            self.is_paused = True
-            self.started = False
-            btn_play.label.set_text('▶ Play')
-            timer_text.set_text('Time: 0.00s')
-            self.update(0)
-            fig.canvas.draw_idle()
-
-    controller = PlaybackController()
-    ax_play = plt.axes([0.38, 0.02, 0.12, 0.05])
-    ax_stop = plt.axes([0.52, 0.02, 0.1, 0.05])
-    btn_play = Button(ax_play, '▶ Play', color='#222222', hovercolor='#333333')
-    btn_stop = Button(ax_stop, '■ Stop', color='#222222', hovercolor='#333333')
-    btn_play.label.set_color('cyan')
-    btn_stop.label.set_color('red')
-    btn_play.on_clicked(controller.toggle)
-    btn_stop.on_clicked(controller.stop)
-
-    annot = ax.annotate("", xy=(0,0), xytext=(15,15), textcoords="offset points", bbox=dict(boxstyle="round", fc="black", ec="cyan", alpha=0.8), arrowprops=dict(arrowstyle="->", color='white'), color="white", fontsize=9)
-    annot.set_visible(False)
-
-    def on_pick(event):
-        idx = int(event.ind[0])
-        if not controller.is_paused: controller.toggle(None)
-        controller.update(idx)
-        annot.xy = [x[idx], y[idx]]
-        annot.set_text(f"X: {x[idx]:.2f}\nY: {y[idx]:.2f}\nθ: {h[idx]:.1f}°")
-        annot.set_visible(True)
-        fig.canvas.draw_idle()
-
-    fig.canvas.mpl_connect("pick_event", on_pick)
-    ax.set_xlim(-72, 72); ax.set_ylim(-72, 72)
-    ax.set_title("LemLib Playback Tool 2026", pad=10)
-    plt.show()
-else:
-    print("Could not load data. Ensure logs.txt contains valid VRC coordinates.")
+    ax.plot(x, y, color='cyan', linewidth=1, alpha=0.3, zorder=2) #draw line showing path
+    points = ax.scatter(x, y, c=v, cmap='plasma', s=POINT_SIZE, alpha=0.7, zorder=3, picker=True) #draw points colored by velocity(plasma)
+    ax.set_xlim(-72, 72) #x and y limits to match field size
+    ax.set_ylim(-72, 72)
+    ax.set_title("LemLib Playback Tool 2026", pad=10) #title of window
+    plt.show() #actually display the window
