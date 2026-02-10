@@ -781,7 +781,7 @@ void awp() {
 
     // #1
     chassis.setPose(start_pose);
-    descore.firePiston(true);
+    //descore.firePiston(true);
     chassis.moveToPoint(-37.267, -46, 800, {.maxSpeed = 70, .minSpeed = 1, .earlyExitRange = 0.3}, false); //
     chassis.turnToHeading(270, 750, {}, true);
     wait(100);
@@ -811,9 +811,10 @@ void awp() {
     score_toggle.firePiston(false); // close scoring hood
     chassis.moveToPose(-21.1, -13.1, 360, 1000, {.lead = 0.4, .minSpeed = 50, .earlyExitRange = 1},
                        false); // go towards 1st trio
-    chassis.moveToPoint(-22.5, 24, 1000, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 1},
+    //descore.firePiston(false);
+                       chassis.moveToPoint(-21.5, 24, 1000, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 1},
                         true); // go towards 2nd trio
-    wait(780);
+    wait(680);
     unloader.firePiston(true);
     chassis.waitUntilDone();
     rb(100);
@@ -832,17 +833,17 @@ void awp() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
     intake.mid_goal_strong();
     intake_1.move_voltage(12000);
-    wait(700); //wait to score
+    wait(450); //wait to score
     intake.stop();
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // release brake once done scoring
-    chassis.moveToPoint(-50, 47, 850, {}, true); // go to matchloader
+    chassis.moveToPoint(-50, 47, 870, {}, true); // go to matchloader
     intake.outake();
     intake_1.move_voltage(0); // dont move this one
     wait(400);
     intake.intake();
     chassis.waitUntilDone();
-    chassis.turnToHeading(270, 300, {}, false); // correct orientation
-    robot.ram(95, 930);
+    chassis.turnToHeading(270, 500, {}, false); // correct orientation
+    robot.ram(87, 1000);
     moveStraight(-9, 300, {}, false);
     chassis.moveToPoint(-32.344, 46, 900, {.forwards = false, .minSpeed = 55, .earlyExitRange = 2},
                        false); // go back into goal
@@ -1419,7 +1420,7 @@ void elimLeftSafe() {
  */
 void autonomous() {
     pros::Task log(logData); // log data
-    awp();
+    skills();
 }
 
 /**
