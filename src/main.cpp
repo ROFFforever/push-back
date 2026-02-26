@@ -46,7 +46,7 @@ lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
                                             100, // small error range timeout, in milliseconds
                                             3, // large error range, in inches
                                             500, // large error range timeout, in milliseconds
-                                            15 // maximum acceleration (slew)
+                                            50 // maximum acceleration (slew)
 );
 // angular PID controller
 lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
@@ -271,7 +271,7 @@ void skills() {
     descore.firePiston(true);
     intake.intake(); // Start intake
     moveStraight(10, 500, {}, false);
-    chassis.turnToHeading(66, 540, {.maxSpeed = 110}, false);
+    chassis.turnToHeading(63, 540, {.maxSpeed = 110}, false);
     moveStraight(16.5, 950, {.maxSpeed = 100}, false); // go get the quad balls for two, one red and one blue
     brake();
     intake.stop(); // stop intake to prep for outtake
@@ -286,35 +286,35 @@ void skills() {
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
     intake.mid_goal(); // score mid goal
     moveStraight(2, 200, {}, false);
-    wait(1000); // give time to score
+    wait(400); // give time to score
     intake.outake(); // finished
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    chassis.moveToPose(-53.318, 44.8, -90, 1400, {.lead = 0.3}, true); // go towards matchloaders
-    wait(300);
-    unloader.firePiston(true); // Piston down to unload matchloads
-    wait(150);
+    chassis.moveToPoint(-46, 45.5, 1600, {.maxSpeed = 100, .minSpeed=1, .earlyExitRange=1}, true); // go towards matchloaders
     intake.mid_goal();
-    wait(100);
-    intake.stop(); // outtake to push balls into matchloader
-    wait(100);
+    wait(150);
+    intake.outake(); // outtake to push balls into matchloader
+    wait(200);
     intake.mid_goal();
     chassis.waitUntilDone();
-    chassis.turnToHeading(-90, 300, {}, false);
+    rb(100);
+    chassis.turnToHeading(-90, 600, {}, false);
+    unloader.firePiston(true);
+    wait(200);
     intake.intake();
-    robot.ram(87, 300); // get matchloader balls
-    robot.ram(84, 1500); // push hard to tilt matchloader
+    robot.ram(98, 350); // get matchloader balls
+    robot.ram(50, 940); // push hard to tilt matchloader
     moveStraight(-8, 300, {}, true);
     chassis.waitUntilDone();
     chassis.turnToHeading(-90, 250, {}, false);
     chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_right_side() + 0.1, chassis.getPose().theta); // reset
     chassis.turnToHeading(0, 600);
     unloader.firePiston(false); // Matchloader up
-    moveStraight(7.5, 440, {}, true); // move so dont hit the goals
+    moveStraight(7, 440, {}, true); // move so dont hit the goals
     chassis.swingToHeading(90, DriveSide::RIGHT, 850); // turn so can go forwards
     real_brake();
     chassis.turnToHeading(88, 230); // make sure we not off
     intake.stop();
-    chassis.moveToPoint(50, 56.5, 2200, {}, true); // go to other side of field
+    chassis.moveToPoint(50, 57, 2200, {}, true); // go to other side of field
     intake.outake();
     intake_3.move_voltage(0); // dont move this one
     wait(200);
@@ -325,15 +325,15 @@ void skills() {
         wait(20);
     }
     chassis.cancelMotion();
-    chassis.moveToPoint(50, 56.5, 800, {.maxSpeed = 35, .minSpeed = 30, .earlyExitRange = 1},
+    chassis.moveToPoint(50, 57, 800, {.maxSpeed = 35, .minSpeed = 30, .earlyExitRange = 1},
                         false); // go to other side of field
     chassis.turnToHeading(90, 250, {}, false);
     chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_left_side() - 0.5, chassis.getPose().theta); // reset
-    rb(100);
-    chassis.turnToHeading(58, 500, {}, false);
-    chassis.moveToPose(32, 48, 90, 1300, {.forwards = false, .lead = 0.35, .minSpeed = 40, .earlyExitRange = 0.3},
-                       true); // get into goal
-    chassis.waitUntilDone();
+    rb(50);
+    chassis.moveToPoint(41.3, 49.1, 1300, {.forwards = false, .minSpeed = 30, .earlyExitRange = 3.5}, false); // get near
+                                                                                                         // goal
+    chassis.moveToPose(26, 47, 90, 600, {.forwards = false, .lead = 0.17, .minSpeed = 1, .earlyExitRange = 1},
+                       false); // get into the goal
     chassis.turnToHeading(90, 300, {.minSpeed = 50, .earlyExitRange = 1}, false);
     robot.ram(-100, 300); // get into goal alligner
     intake.intake();
@@ -343,11 +343,8 @@ void skills() {
     intake.stop();
     rb(70); // brake for a bit
     angError = fabs(chassis.getPose().theta - 90);
-    chassis.setPose(
-        28, 46.8,
-        angError < 4
-            ? 90
-            : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
+    if (angError < 3.5)
+        chassis.setPose(28, 46.8, 90); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
     wait(50);
     chassis.moveToPoint(48, 46.5, 600, {.minSpeed = 60, .earlyExitRange = 1}, true); // go to matchloader
     wait(300);
@@ -355,9 +352,9 @@ void skills() {
     intake.intake();
     chassis.waitUntilDone();
     chassis.turnToHeading(90, 150, {.minSpeed = 1, .earlyExitRange = 1}, false); // align with matchloader
-    robot.ram(84, 400); // get matchloader balls
-    robot.ram(84, 1700); // push hard to tilt matchloader
-    chassis.moveToPose(29.5, 47.5, 90, 800, {.forwards = false, .lead = 0.3, .minSpeed = 70, .earlyExitRange = 2},
+    robot.ram(95, 350); // get matchloader balls
+    robot.ram(50, 900);
+    chassis.moveToPose(29.5, 47.8, 90, 950, {.forwards = false, .lead = 0.3, .minSpeed = 70, .earlyExitRange = 1.5},
                        true); // go back into goal
 
     // UNJAM INTAKE INCASE SOMETHING STUCK
@@ -374,16 +371,12 @@ void skills() {
     intake.intake();
     robot.ram(-80, 1650); // move back to get into alligner/goal and score
     angError = fabs(chassis.getPose().theta - 90);
-    chassis.setPose(
-        28, 46.8,
-        angError < 3.5
-            ? 90
-            : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
+    if (angError < 3.5) { chassis.setPose(28, 46.8, 90); }
     wait(15); // let that register
 
     // TODO REMOVE THIS
-    //  chassis.setPose(28, 46.8, 90); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
-    //  descore.firePiston(true);
+    // chassis.setPose(28, 46.8, 90); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
+    // descore.firePiston(true);
     // chassis.setPose(70 - robot.get_distance_left_side(), -17, 180); // used to be -17.5
     //   chassis.setPose(-28, -46.8,
     //                  270); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
@@ -391,179 +384,190 @@ void skills() {
     //  score_toggle.firePiston(true);
     //  wait(1000);
 
-    // #2
-    moveStraight(6, 400, {}, false); // move so dont hit the goals
-    goal_x = 59.57;
-    goal_y = 21;
-    chassis.moveToPoint(goal_x, goal_y, 1300, {.maxSpeed = 80}, true);
-    error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
-    while (error > 15) {
-        error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
-        wait(10);
-    }
-    chassis.cancelMotion();
-    chassis.moveToPoint(61, goal_y - 1.5, 800, {.maxSpeed = 35}, false);
-    chassis.swingToHeading(175, DriveSide::RIGHT, 600, {}, false);
-    intake.intake();
-    score_toggle.firePiston(false);
-    float timeCross = 1900; // least amount of time
-    chassis.arcade(110, 0); // cross barrier
-    wait(200);
-    chassis.arcade(97, 0);
-    wait(timeCross - 200);
-    float roll = imu.get_roll();
-    float prevRoll = -100;
-    float dRoll = 2; // change in roll(up and down motion)
-    while (dRoll > 0.25) {
-        dRoll = fabs(prevRoll - roll);
-        prevRoll = roll;
-        roll = imu.get_roll();
-        wait(200);
-    }
-    wait(120); // go a little more to be safe
-    chassis.arcade(0, 0); // stop
-    robot.ram(-70, 100); // allign with parking zone
-    robot.ram(-50, 1600); // allign with parking zone
-    wait(400); // wait for robot to settle
-    chassis.setPose(70 - robot.get_distance_left_side(), -17, 180); // used to be -17.5
-    wait(20); // let register
+    // // #2
+    // moveStraight(6, 400, {}, false); // move so dont hit the goals
+    // goal_x = 59.57;
+    // goal_y = 21;
+    // chassis.moveToPoint(goal_x, goal_y, 1300, {.maxSpeed = 80}, true);
+    // error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
+    // while (error > 15) {
+    //     error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
+    //     wait(10);
+    // }
+    // chassis.cancelMotion();
+    // chassis.moveToPoint(61, goal_y - 1.5, 800, {.maxSpeed = 35}, false);
+    // rb(50);
+    // robot.ram(-80,80);
+    // chassis.swingToHeading(175, DriveSide::RIGHT, 600, {}, false);
+    // intake.intake();
+    // score_toggle.firePiston(false);
+    // //float timeCross = 1900; // least amount of time
+    // float timeCross = 1800;
+    // chassis.arcade(110, 0); // cross barrier
+    // wait(200);
+    // chassis.arcade(97, 0);
+    // wait(timeCross - 200);
+    // float roll = imu.get_roll();
+    // float prevRoll = -100;
+    // float dRoll = 2; // change in roll(up and down motion)
+    // while (dRoll > 0.25) {
+    //     dRoll = fabs(prevRoll - roll);
+    //     prevRoll = roll;
+    //     roll = imu.get_roll();
+    //     wait(200);
+    // }
+    // wait(120); // go a little more to be safe
+    // chassis.arcade(0, 0); // stop
+    // robot.ram(-70, 100); // allign with parking zone
+    // robot.ram(-50, 1600); // allign with parking zone
+    // wait(400); // wait for robot to settle
+    // chassis.setPose(70 - robot.get_distance_left_side(), -17, 180); // used to be -17.5
+    // wait(20); // let register
 
-    // #3
-    chassis.moveToPoint(61, -28, 700, {.maxSpeed = 60, .minSpeed = 1, .earlyExitRange = 1}, false);
-    chassis.turnToPoint(24, -18.5, 700, {.maxSpeed = 60}, false);
-    intake.intake();
-    chassis.moveToPoint(24, -18.5, 800, {}, false);
-    intake.stop();
-    chassis.moveToPoint(14.4, -10.3, 1400, {.forwards = false, .maxSpeed = 100}, false);
-    chassis.turnToPoint(0, 0, 250, {.forwards = false}, true);
-    intake.outake(); // get them unstuck
-    intake_1.move_voltage(0); // dont move the first stage as to not loose balls
-    wait(150); // give the balls time to get unstuck
-    intake.stop();
-    chassis.waitUntilDone();
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
-    intake.mid_goal(); // score mid goal
-    wait(1700); // give time to score
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    moveStraight(2.3, 150, {}, false);
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
-    intake.mid_goal_weak();
-    wait(1300);
-    intake.mid_goal();
-    intake.intake();
-    score_toggle.firePiston(true); // get balls out so dont accidentally store
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // Let go
-    chassis.moveToPoint(49, -45, 1200, {}, true); // go towards matchloaders
-    intake.outake();
-    wait(150);
-    unloader.firePiston(true); // Piston down to unload matchloads
-    wait(300);
-    intake.intake();
-    chassis.waitUntilDone();
-    score_toggle.firePiston(false); // close scoring hood
-    chassis.turnToHeading(90, 500, {.minSpeed = 1, .earlyExitRange = 1}, false); // align with matchloader
-    robot.ram(85, 400); // get matchloader balls
-    robot.ram(84, 1700); // push hard to tilt matchloader
-    moveStraight(-9.5, 300, {}, false); // get out of way
-    chassis.turnToHeading(90, 250, {}, false);
-    chassis.setPose(chassis.getPose().x, robot.get_distance_right_side() + 0.1 - 70, chassis.getPose().theta); // reset
-    wait(15); // let reset register
-    chassis.turnToHeading(180, 600, {}, false);
-    moveStraight(10, 420, {}, true); // move so dont hit the goals
-    wait(100);
-    unloader.firePiston(false); // Matchloader up
-    chassis.waitUntilDone();
-    chassis.swingToHeading(270, DriveSide::RIGHT, 850); // turn so can go forwards
-    chassis.turnToHeading(270, 130); // make sure we not off
-    chassis.moveToPoint(-50, -56.5, 2200, {}, true); // go to other side of field
-    intake.outake();
-    intake_3.move_voltage(0); // dont move this one
-    wait(300);
-    intake.stop();
-    error = chassis.getPose().x + 30;
-    while (error > 0.5) { // once past x=-30 slow down basically
-        error = chassis.getPose().x + 30;
-        wait(20);
-    }
-    chassis.cancelMotion();
-    chassis.moveToPoint(-50, -56.5, 800, {.maxSpeed = 35, .minSpeed = 30, .earlyExitRange = 1},
-                        false); // go to other side of field
-    rb(50);
-    chassis.turnToHeading(-90, 250, {}, false);
-    chassis.setPose(chassis.getPose().x, robot.get_distance_left_side() + 0.5 - 70, chassis.getPose().theta); // reset
-    rb(50);
-    chassis.turnToHeading(220, 500, {}, false);
-    chassis.moveToPose(-32, -47.5, -90, 1300, {.forwards = false, .lead = 0.35, .minSpeed = 40, .earlyExitRange = 0.3},
-                       true); // get into goal
-    chassis.waitUntilDone();
-    chassis.turnToHeading(-90, 300, {.minSpeed = 50, .earlyExitRange = 1}, false);
-    robot.ram(-100, 300); // get into goal alligner
-    intake.intake();
-    score_toggle.firePiston(true); // open up scoring hood
-    unloader.firePiston(true); // prefire this early as to not jostle around when deploying before matchloader
-    robot.ram(-90, 2650); // move back to get into alligner/goal and score
-    intake.stop();
-    rb(70); // brake for a bit
-    angError = fabs(chassis.getPose().theta - 270);
-    chassis.setPose(
-        -28, -46.8,
-        angError < 4
-            ? 270
-            : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
-    wait(15); // let that register
+    // // #3
+    // chassis.moveToPoint(61, -28, 700, {.maxSpeed = 60, .minSpeed = 1, .earlyExitRange = 1}, false);
+    // chassis.turnToPoint(24, -18.5, 700, {.maxSpeed = 60}, false);
+    // intake.intake();
+    // chassis.moveToPoint(24, -18.5, 800, {}, false);
+    // intake.stop();
+    // chassis.moveToPoint(14.4, -10.3, 1400, {.forwards = false, .maxSpeed = 100}, false);
+    // chassis.turnToPoint(0, -3, 250, {.forwards = false}, true);
+    // intake.outake(); // get them unstuck
+    // intake_1.move_voltage(0); // dont move the first stage as to not loose balls
+    // wait(150); // give the balls time to get unstuck
+    // intake.stop();
+    // chassis.waitUntilDone();
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE); // hold so robot doesn't drift
+    // intake.mid_goal(); // score mid goal
+    // wait(1700); // give time to score
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+    // moveStraight(2.3, 150, {}, false);
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE); // hold so robot doesn't drift
+    // intake.mid_goal_weak();
+    // wait(1300);
+    // intake.mid_goal();
+    // intake.intake();
+    // score_toggle.firePiston(true); // get balls out so dont accidentally store
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // Let go
+    // chassis.moveToPoint(49, -45, 1200, {}, true); // go towards matchloaders
+    // intake.outake();
+    // wait(150);
+    // unloader.firePiston(true); // Piston down to unload matchloads
+    // wait(300);
+    // intake.intake();
+    // chassis.waitUntilDone();
+    // score_toggle.firePiston(false); // close scoring hood
+    // chassis.turnToHeading(90, 500, {.minSpeed = 1, .earlyExitRange = 1}, false); // align with matchloader
+    // robot.ram(85, 400); // get matchloader balls
+    // robot.ram(84, 1700); // push hard to tilt matchloader
+    // moveStraight(-9.5, 300, {}, false); // get out of way
+    // chassis.turnToHeading(90, 250, {}, false);
+    // chassis.setPose(chassis.getPose().x, robot.get_distance_right_side() + 0.1 - 70, chassis.getPose().theta); //
+    // reset wait(15); // let reset register chassis.turnToHeading(180, 600, {}, false); moveStraight(10, 420, {},
+    // true); // move so dont hit the goals wait(100); unloader.firePiston(false); // Matchloader up
+    // chassis.waitUntilDone();
+    // chassis.swingToHeading(270, DriveSide::RIGHT, 850); // turn so can go forwards
+    // chassis.turnToHeading(270, 130); // make sure we not off
+    // chassis.moveToPoint(-50, -56.5, 2200, {}, true); // go to other side of field
+    // intake.outake();
+    // intake_3.move_voltage(0); // dont move this one
+    // wait(300);
+    // intake.stop();
+    // error = chassis.getPose().x + 30;
+    // while (error > 0.5) { // once past x=-30 slow down basically
+    //     error = chassis.getPose().x + 30;
+    //     wait(20);
+    // }
+    // chassis.cancelMotion();
+    // chassis.moveToPoint(-50, -56.5, 800, {.maxSpeed = 35, .minSpeed = 30, .earlyExitRange = 1},
+    //                     false); // go to other side of field
+    // rb(50);
+    // chassis.turnToHeading(-90, 250, {}, false);
+    // chassis.setPose(chassis.getPose().x, robot.get_distance_left_side() + 0.5 - 70, chassis.getPose().theta); //
+    // reset rb(50); chassis.turnToHeading(220, 500, {}, false); chassis.moveToPose(-32, -47.5, -90, 1300, {.forwards =
+    // false, .lead = 0.35, .minSpeed = 40, .earlyExitRange = 0.3},
+    //                    true); // get into goal
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(-90, 300, {.minSpeed = 50, .earlyExitRange = 1}, false);
+    // robot.ram(-100, 300); // get into goal alligner
+    // intake.intake();
+    // score_toggle.firePiston(true); // open up scoring hood
+    // unloader.firePiston(true); // prefire this early as to not jostle around when deploying before matchloader
+    // robot.ram(-90, 2650); // move back to get into alligner/goal and score
+    // intake.stop();
+    // rb(70); // brake for a bit
+    // angError = fabs(chassis.getPose().theta - 270);
+    // chassis.setPose(
+    //     -28, -46.8,
+    //     angError < 4
+    //         ? 270
+    //         : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset
+    //         angle
+    // wait(15); // let that register
 
-    // #4
-    chassis.moveToPoint(-48, -46.5, 600, {.minSpeed = 60, .earlyExitRange = 1}, true); // go to matchloader
-    wait(300);
-    score_toggle.firePiston(false); // close scoring hood
-    intake.intake();
-    chassis.waitUntilDone();
-    chassis.turnToHeading(270, 150, {.minSpeed = 1, .earlyExitRange = 1}, false); // align with matchloader
-    robot.ram(84, 400); // get matchloader balls
-    robot.ram(84, 1700); // push hard to tilt matchloader
-    chassis.moveToPose(-29.5, -47, 270, 800, {.forwards = false, .lead = 0.3, .minSpeed = 70, .earlyExitRange = 2},
-                       true); // go back into goal
-    wait(300);
-    intake.outake();
-    intake_3.move_voltage(0);
-    wait(150);
-    intake.stop();
-    wait(300);
-    score_toggle.firePiston(true); // open up scoring hood
-    chassis.waitUntilDone();
-    unloader.firePiston(false); // Matchloader up
-    robot.ram(-105, 200); // get into goal
-    intake.intake();
-    robot.ram(-80, 2000); // move back to get into alligner/goal and score
-    angError = fabs(chassis.getPose().theta - 270);
-    chassis.setPose(
-        -28, -46.8,
-        angError < 3.5
-            ? 270
-            : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
-    moveStraight(6, 400, {}, false); // move so dont hit the goals
-    goal_x = -62;
-    goal_y = -21;
-    chassis.moveToPoint(goal_x, goal_y, 1300, {.maxSpeed = 80}, true);
-    error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
-    while (error > 15) {
-        error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
-        wait(10);
-    }
-    chassis.cancelMotion();
-    chassis.moveToPoint(-63, goal_y - 1.5, 800, {.maxSpeed = 35}, false);
-    chassis.swingToHeading(355, DriveSide::RIGHT, 600, {}, false);
-    intake.intake();
-    score_toggle.firePiston(false);
-    intake.outake();
-    float timeCrossEnd = 1200; // least amount of time
-    chassis.arcade(110, 0); // cross barrier
-    wait(200);
-    chassis.arcade(97, 0);
-    wait(timeCrossEnd - 200);
+    // // //TODO REMOVE THIS
+    // // chassis.setPose(
+    // //     -28, -46.8,
+    // //     270); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
+    // // wait(15); // let that register
+    // // unloader.firePiston(true);
+    // // wait(600);
 
-    chassis.arcade(0, 0); // stop
-                          //  DONE :) 97 potential points
+    // // #4
+    // chassis.moveToPoint(-48, -46.5, 600, {.minSpeed = 60, .earlyExitRange = 1}, true); // go to matchloader
+    // wait(300);
+    // score_toggle.firePiston(false); // close scoring hood
+    // intake.intake();
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(270, 150, {.minSpeed = 1, .earlyExitRange = 1}, false); // align with matchloader
+    // robot.ram(80, 400); // get matchloader balls
+    // robot.ram(80, 1700); // push hard to tilt matchloader
+    // chassis.moveToPose(-29.5, -47, 270, 800, {.forwards = false, .lead = 0.3, .minSpeed = 70, .earlyExitRange = 2},
+    //                    true); // go back into goal
+    // wait(300);
+    // intake.outake();
+    // intake_3.move_voltage(0);
+    // wait(150);
+    // intake.stop();
+    // wait(300);
+    // score_toggle.firePiston(true); // open up scoring hood
+    // chassis.waitUntilDone();
+    // unloader.firePiston(false); // Matchloader up
+    // robot.ram(-105, 200); // get into goal
+    // intake.intake();
+    // robot.ram(-80, 2000); // move back to get into alligner/goal and score
+    // angError = fabs(chassis.getPose().theta - 270);
+    // chassis.setPose(
+    //     -28, -46.8,
+    //     angError < 3.5
+    //         ? 270
+    //         : chassis.getPose().theta); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset
+    //         angle
+    // moveStraight(6, 400, {}, false); // move so dont hit the goals
+    // goal_x = -62;
+    // goal_y = -19.5;
+    // chassis.moveToPoint(goal_x, goal_y, 1300, {.maxSpeed = 80}, true);
+    // error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
+    // while (error > 15) {
+    //     error = sqrt(pow(goal_x - chassis.getPose().x, 2) + pow(goal_y - chassis.getPose().y, 2));
+    //     wait(10);
+    // }
+    // chassis.cancelMotion();
+    // chassis.moveToPoint(-62, goal_y - 1.5, 800, {.maxSpeed = 35}, false);
+    // rb(100);
+    // robot.ram(-80, 100); //get unstuck from wall
+    // chassis.swingToHeading(350, DriveSide::RIGHT, 600, {}, false);
+    // intake.intake();
+    // score_toggle.firePiston(false);
+    // intake.outake();
+    // float timeCrossEnd = 1150; // least amount of time
+    // chassis.arcade(110, 0); // cross barrier
+    // wait(200);
+    // chassis.arcade(97, 0);
+    // wait(timeCrossEnd - 200);
+
+    // chassis.arcade(0, 0); // stop
+    //                       //  DONE :) 97 potential points
 
     // BUILD ISSUES:
     //  1.) Balls in jaws at least like 6 times
@@ -618,6 +622,52 @@ void elimRight() { // low goal 4 high 3 plus push
     moveStraight(7.6, 400, {}, false);
     score_toggle.firePiston(false);
     chassis.turnToHeading(90, 550, {}, false);
+    intake.outake();
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    robot.ram(-90, 1100);
+    wait(900);
+    intake.stop();
+}
+
+void norcalRight() {
+    pros::Task debug(print_pos);
+
+    // grab first three balls
+    chassis.setPose(70 - 25.5, 70 - robot.get_distance_right_side(), 270);
+    // intake_1.move_voltage(12000);
+    intake.intake();
+    chassis.moveToPose(20.2, 21.9, 303, 1150, {.lead = 0.28, .minSpeed = 50, .earlyExitRange = 0.1}, true);
+    wait(350);
+    unloader.firePiston(true);
+    chassis.waitUntilDone();
+
+    // go to matchloader
+    chassis.turnToHeading(413, 540, {.maxSpeed = 110}, false);
+    chassis.waitUntilDone();
+    chassis.moveToPose(47.4, 48, 408, 1230, {}, false);
+    chassis.turnToHeading(450, 350, {.maxSpeed = 1000}, false);
+    robot.ram(85, 1000);
+    // moveStraight(-9, 300, {}, false);
+    /*chassis.moveToPose(33.288, 46.8, 450, 1000,
+                       {.forwards = false, .lead = 0.3, .minSpeed = 55, .earlyExitRange = 1},
+                       false); // go back into goal*/
+
+    moveStraight(-4, 250, {.minSpeed = 1, .earlyExitRange = 1}, false);
+    chassis.moveToPoint(30, 47.5, 600, {.forwards = false}, false);
+    robot.ram(-105, 300); // get into goal
+    score_toggle.firePiston(true); // open up scoring hood
+    intake.intake(); // start scoring
+    robot.ram(-85, 1300);
+    unloader.firePiston(false); // Matchloader up
+    brake();
+
+    //
+    // descore.firePiston(false);
+    moveStraight(3, 170, {.minSpeed = 50, .earlyExitRange = 1}, false);
+    chassis.swingToHeading(360, lemlib::DriveSide::LEFT, 800, {}, false);
+    moveStraight(7.75, 400, {}, false);
+    score_toggle.firePiston(false);
+    chassis.turnToHeading(446, 550, {}, false);
     intake.outake();
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     robot.ram(-90, 1100);
@@ -738,7 +788,7 @@ void highlandElims() {
 
     // #1
     chassis.setPose(start_pose);
-    descore.firePiston(true);
+    // descore.firePiston(true);
     chassis.moveToPoint(-37.267, -46, 800, {.maxSpeed = 70, .minSpeed = 1, .earlyExitRange = 0.3}, false); //
     chassis.turnToHeading(270, 750, {}, false);
     unloader.firePiston(true);
@@ -758,7 +808,7 @@ void highlandElims() {
     brake();
 
     //
-    descore.firePiston(false);
+    // descore.firePiston(false);
     moveStraight(3, 170, {.minSpeed = 50, .earlyExitRange = 1}, false);
     chassis.swingToHeading(180, lemlib::DriveSide::LEFT, 800, {}, false);
     moveStraight(6, 400, {}, false);
@@ -781,8 +831,9 @@ void awp() {
 
     // #1
     chassis.setPose(start_pose);
-    //descore.firePiston(true);
-    chassis.moveToPoint(-37.267, -46, 800, {.maxSpeed = 70, .minSpeed = 1, .earlyExitRange = 0.3}, false); //
+    // descore.firePiston(true);
+    chassis.moveToPoint(-37.267, -45.8, 920, {.maxSpeed = 70, .minSpeed = 1, .earlyExitRange = 0.3}, false); //
+    rb(50);
     chassis.turnToHeading(270, 750, {}, true);
     wait(100);
     unloader.firePiston(true);
@@ -790,10 +841,9 @@ void awp() {
     intake.intake();
     chassis.waitUntilDone();
     moveStraight(15, 800, {.minSpeed = 1, .earlyExitRange = 1}, false); // get close
-    robot.ram(85, 700);
+    robot.ram(80, 740);
     moveStraight(-9, 300, {}, false);
-    chassis.moveToPose(-30.535, -46.7, 270, 900,
-                       {.forwards = false, .lead = 0.3, .minSpeed = 55, .earlyExitRange = 1},
+    chassis.moveToPose(-30.535, -47.3, 270, 900, {.forwards = false, .lead = 0.3, .minSpeed = 55, .earlyExitRange = 1},
                        false); // go back into goal
     robot.ram(-105, 300); // get into goal
     score_toggle.firePiston(true); // open up scoring hood
@@ -802,17 +852,24 @@ void awp() {
     unloader.firePiston(false); // Matchloader up
     brake();
     float angError = fabs(chassis.getPose().theta - 270);
-    chassis.setPose(angError < 3.5 ? -29.5 : chassis.getPose().x, angError < 3.5 ? -46.8 : chassis.getPose().y,
-                    chassis.getPose().theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted far
+    chassis.setPose(
+        angError < 3.5 ? -29.5 : chassis.getPose().x, angError < 3.5 ? -46.8 : chassis.getPose().y,
+        chassis.getPose()
+            .theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted far
 
     // #2
-    moveStraight(4, 250, {}, false); // move so dont hit the goals
+    moveStraight(6, 280, {}, false); // move so dont hit the goals
     chassis.swingToHeading(20, DriveSide::RIGHT, 750, {}, false);
     score_toggle.firePiston(false); // close scoring hood
     chassis.moveToPose(-21.1, -13.1, 360, 1000, {.lead = 0.4, .minSpeed = 50, .earlyExitRange = 1},
-                       false); // go towards 1st trio
-    //descore.firePiston(false);
-                       chassis.moveToPoint(-21.5, 24, 1000, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 1},
+                       true); // go towards 1st trio
+    wait(400);
+    intake.outake();
+    wait(80);
+    intake.intake();
+    chassis.waitUntilDone();
+    // descore.firePiston(false);
+    chassis.moveToPoint(-21.5, 24, 1000, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 1},
                         true); // go towards 2nd trio
     wait(680);
     unloader.firePiston(true);
@@ -820,33 +877,33 @@ void awp() {
     rb(100);
     intake.intake();
     chassis.turnToHeading(307, 400, {}, false); // face towards midgoal
-    chassis.moveToPoint(-13, 15.9, 850, {.forwards=false, .maxSpeed = 80}, true); // move towards midgoal
+    chassis.moveToPoint(-12.1, 13.7, 850, {.forwards = false, .maxSpeed = 80}, true); // move towards midgoal
     intake.outake(); // get them unstuck
     intake_1.move_voltage(0); // dont move the first stage as to not loose
-    wait(250); // give the balls time to get unstuck
+    wait(80); // give the balls time to get unstuck
     intake.stop();
     chassis.waitUntilDone();
-    chassis.turnToPoint(0,5, 300, {.forwards=false}, true); // correct orientation
-    intake.mid_goal_strong();
+    chassis.turnToPoint(0, 2, 300, {.forwards = false}, true); // correct orientation
+    moveStraight(3, 250, {}, true);
+    intake.mid_goal();
     chassis.waitUntilDone();
-    robot.ram(-60, 200); //just move a little back to align with middle goal
+    robot.ram(-60, 100); // just move a little back to align with middle goal
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
-    intake.mid_goal_strong();
+    intake.mid_goal();
     intake_1.move_voltage(12000);
-    wait(450); //wait to score
+    wait(400); // wait to score
     intake.stop();
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // release brake once done scoring
-    chassis.moveToPoint(-50, 47, 870, {}, true); // go to matchloader
+    chassis.moveToPoint(-50, 46.7, 870, {}, true); // go to matchloader
     intake.outake();
-    intake_1.move_voltage(0); // dont move this one
-    wait(400);
+    wait(300);
     intake.intake();
     chassis.waitUntilDone();
     chassis.turnToHeading(270, 500, {}, false); // correct orientation
-    robot.ram(87, 1000);
+    robot.ram(80, 1000);
     moveStraight(-9, 300, {}, false);
     chassis.moveToPoint(-32.344, 46, 900, {.forwards = false, .minSpeed = 55, .earlyExitRange = 2},
-                       false); // go back into goal
+                        false); // go back into goal
     robot.ram(-95, 400);
     score_toggle.firePiston(true); // open up scoring hood
     intake.intake(); // start scoring
@@ -1421,6 +1478,7 @@ void elimLeftSafe() {
 void autonomous() {
     pros::Task log(logData); // log data
     skills();
+    // norcalRight();
 }
 
 /**
