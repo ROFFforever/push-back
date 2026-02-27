@@ -1,4 +1,5 @@
 #include "main.h"
+#include "lemlib/chassis/odom.hpp"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/chassis.hpp"
 #include "pros/motors.h"
@@ -46,7 +47,7 @@ lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
                                             100, // small error range timeout, in milliseconds
                                             3, // large error range, in inches
                                             500, // large error range timeout, in milliseconds
-                                            50 // maximum acceleration (slew)
+                                            0 // maximum acceleration (slew)
 );
 // angular PID controller
 lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
@@ -257,7 +258,11 @@ void left_side_red() {
     robot.ram(-85, 3200); // push balls deeper into goal also alligning robot via alligner
     wait(4000);
 }
-
+float brakeSmart(){
+    lemlib::Pose speed = lemlib::getLocalSpeed(true);
+    float current_speed = sqrt(speed.x * speed.x + speed.y * speed.y);
+    return current_speed;
+}
 void skills() {
     // Starting Position
     lemlib::Pose start_pose(-47.25, 16.3, 90);
@@ -315,27 +320,36 @@ void skills() {
     real_brake();
     chassis.turnToHeading(88, 230); // make sure we not off
     intake.stop();
-    chassis.moveToPoint(50, 57, 2200, {}, true); // go to other side of field
+    chassis.moveToPoint(50, 57, 2600, {}, true); // go to other side of field
     intake.outake();
     intake_3.move_voltage(0); // dont move this one
     wait(200);
     intake.stop();
-    error = 25 - chassis.getPose().x;
-    while (error > 0.5) { // once past x=30 slow down basically
-        error = 30 - chassis.getPose().x;
-        wait(20);
+    float target = -100000;
+    target = 33.5; //in terms of x
+    error = target - chassis.getPose().x;
+    while(error > 0.5){ //while under x=35
+        error = target - chassis.getPose().x; //update error
+        wait(15);
     }
+    printf("data\n");
     chassis.cancelMotion();
-    chassis.moveToPoint(50, 57, 800, {.maxSpeed = 35, .minSpeed = 30, .earlyExitRange = 1},
-                        false); // go to other side of field
-    chassis.turnToHeading(90, 250, {}, false);
-    chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_left_side() - 0.5, chassis.getPose().theta); // reset
-    rb(50);
-    chassis.moveToPoint(41.3, 49.1, 1300, {.forwards = false, .minSpeed = 30, .earlyExitRange = 3.5}, false); // get near
-                                                                                                         // goal
-    chassis.moveToPose(26, 47, 90, 600, {.forwards = false, .lead = 0.17, .minSpeed = 1, .earlyExitRange = 1},
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    chassis.moveToPoint(51, 47.3, 1200, {}, true); // allign in front of midgoal
+    target = 47.5; //in terms of y
+    error = chassis.getPose().y - target;
+    lemlib::Timer timeout(1200);
+    while(error > 0.5 && !timeout.isDone()){ //while under y=47.5
+        error = chassis.getPose().y - target; //update error
+        wait(15);
+    }
+        printf("data\n");
+    chassis.cancelMotion();
+    chassis.turnToHeading(90, 600, {}, false); // turn towards goal
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+    chassis.moveToPose(26, 47.7, 90, 600, {.forwards = false, .lead = 0.17, .minSpeed = 1, .earlyExitRange = 1},
                        false); // get into the goal
-    chassis.turnToHeading(90, 300, {.minSpeed = 50, .earlyExitRange = 1}, false);
+        
     robot.ram(-100, 300); // get into goal alligner
     intake.intake();
     score_toggle.firePiston(true); // open up scoring hood
@@ -1474,16 +1488,28 @@ void elimLeftSafe() {
 /**
  * Runs during auto
  *
- * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
+ * This is an example 
+ *  routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
     pros::Task log(logData); // log data
       
     skills();
-    // norcalRight();
+
     // chassis.setPose(0,0,0);
-    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    // chassis.moveToPoint(10,20,1200, {.minSpeed=1, .earlyExitRange=-5}, true);
+    // chassis.moveToPoint(10,20,1200, {}, true);
+    // float error = 5 - chassis.getPose().x;
+    // float prevSpeed = brakeSmart();
+    // while(error > 0.5){
+    //     error = 5 - chassis.getPose().x;
+    //     prevSpeed = brakeSmart();
+    //     // printf("Current Speed: %.2f\n", prevSpeed);
+    //     wait(15);
+    // }
+    // chassis.arcade(-100,0);
+    // wait(prevSpeed);
+    //     printf("data\n");
+    // chassis.cancelMotion();
     // wait(5000);
     // chassis.turnToHeading(90, 500, {}, false);
 }
