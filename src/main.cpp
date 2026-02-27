@@ -288,21 +288,22 @@ void skills() {
     moveStraight(2, 200, {}, false);
     wait(400); // give time to score
     intake.outake(); // finished
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    chassis.moveToPoint(-46, 45.5, 1600, {.maxSpeed = 100, .minSpeed=1, .earlyExitRange=1}, true); // go towards matchloaders
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    chassis.moveToPoint(-46, 45.5, 1600, {.maxSpeed = 100}, true); // go towards matchloaders
     intake.mid_goal();
     wait(150);
     intake.outake(); // outtake to push balls into matchloader
     wait(200);
     intake.mid_goal();
     chassis.waitUntilDone();
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
     rb(100);
     chassis.turnToHeading(-90, 600, {}, false);
     unloader.firePiston(true);
     wait(200);
     intake.intake();
     robot.ram(98, 350); // get matchloader balls
-    robot.ram(50, 940); // push hard to tilt matchloader
+    robot.ram(50, 1140); // push hard to tilt matchloader
     moveStraight(-8, 300, {}, true);
     chassis.waitUntilDone();
     chassis.turnToHeading(-90, 250, {}, false);
@@ -1477,8 +1478,14 @@ void elimLeftSafe() {
  */
 void autonomous() {
     pros::Task log(logData); // log data
+      
     skills();
     // norcalRight();
+    // chassis.setPose(0,0,0);
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    // chassis.moveToPoint(10,20,1200, {.minSpeed=1, .earlyExitRange=-5}, true);
+    // wait(5000);
+    // chassis.turnToHeading(90, 500, {}, false);
 }
 
 /**
