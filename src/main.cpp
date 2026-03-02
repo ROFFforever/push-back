@@ -472,7 +472,7 @@ void skills() {
     chassis.setPose(chassis.getPose().x, robot.get_distance_right_side() + 0.1 - 70, chassis.getPose().theta); //reset
     wait(15); // let reset register 
     chassis.turnToHeading(180, 600, {}, false); 
-    moveStraight(11, 450, {}, true); // move so dont hit the goals wait(100); unloader.firePiston(false); // Matchloader up
+    moveStraight(9.5, 450, {}, true); // move so dont hit the goals wait(100); unloader.firePiston(false); // Matchloader up
     chassis.waitUntilDone();
     chassis.swingToHeading(270, DriveSide::RIGHT, 850); // turn so can go forwards
     chassis.turnToHeading(270, 130); // make sure we not off
