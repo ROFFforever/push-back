@@ -58,10 +58,10 @@ class Intake {
          */
         void color_sort();
         /**
-         * @brief Checks whether the optical sensor is detecting a color, stops intake once nothing is viewed
+         * @brief Checks whether the optical sensor is detecting blocks(either color hence should only be in skills)
          * @attention Meant to be run in a cycle
          */
-        void color_check();
+        void color_check_skills();
         /**
          * @brief outakes the intake
          */
@@ -71,11 +71,16 @@ class Intake {
          * @attention Meant to be run in a loop
          */
         void anti_jam();
+        /**
+         * @brief checks whether block is wrong color
+         * 
+         */
+        void color_check();
+        bool detected; //when can still see opposite color block
+                bool opcontrol_intake = false; //intake opcontrol spinning right
     private:
         pushback::Robot& robot;
         bool inMotion; //set to true for actions that use intake that are not opcontrol
-        bool detected; //when can still see opposite color block
-        bool opcontrol_intake = false; //intake opcontrol spinning right
         int COLOR1;
         int COLOR2;
 };

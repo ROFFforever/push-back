@@ -219,6 +219,22 @@ void print_pos() {
     }
 }
 
+void checkColorGaps(){
+    while(true){
+        optical.set_led_pwm(100);
+        intake.color_check_skills();
+        float hue = robot.optical->get_hue();
+        if(intake.detected) {
+                    printf("%.2f, %d", hue, intake.opcontrol_intake);
+                    printf(" - Detected\n");
+        } else {
+                printf("%.2f, %d", hue, intake.opcontrol_intake);
+                printf(" - Not Detected\n");
+        }
+        wait(10);
+    }
+}
+
 void logData() {
     while (true) {
         lemlib::Pose pos = chassis.getPose();
@@ -226,6 +242,7 @@ void logData() {
         pros::delay(50);
     }
 }
+
 
 // AUTONS
 void left_side_red() {
@@ -644,7 +661,7 @@ void norcalRight() {
     // intake_1.move_voltage(12000);
     intake.intake();
     chassis.moveToPose(20.2, 21.9, 303, 1150, {.lead = 0.28, .minSpeed = 50, .earlyExitRange = 0.1}, true);
-    wait(350);
+    wait(500);
     unloader.firePiston(true);
     chassis.waitUntilDone();
 
@@ -1486,7 +1503,7 @@ void elimLeftSafe() {
 void autonomous() {
     pros::Task log(logData); // log data
       
-    skills();
+    norcalRight();
 
     // chassis.setPose(0,0,0);
     // chassis.moveToPoint(10,20,1200, {}, true);
@@ -1513,9 +1530,9 @@ void opcontrol() {
     // // robot.color_sort = true; // enable color sorting for now
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // make sure not braked from previous auton(could be braked holding
     //                                                  // control zone in long goal)
-    pros::Task debug(print_pos); // TODO uncomment this
+    // pros::Task debug(print_pos); // TODO uncomment this
+    pros::Task debug(checkColorGaps);
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
-    chassis.setPose(-48, 0, 90);
     while (true) {
         // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);

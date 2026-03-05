@@ -49,7 +49,7 @@ void Intake::runIntake() {
     if (inMotion || opcontrol_intake) {
         robot.optical->set_led_pwm(100);
     } else {
-        robot.optical->set_led_pwm(0);
+        robot.optical->set_led_pwm(100);
     }
 }
 
@@ -108,15 +108,25 @@ void Intake::anti_jam() {
         inMotion = false; // set inMotion to false as unjamming is complete
     }
 }
-
+void Intake::color_check_skills(){
+     float hue = robot.optical->get_hue(); // get color reading
+        if ((hue > 0 && hue < 8) || (hue > 218 && hue < 243)) { // if hue is within a certain range(blue and red)
+            this->detected = true; // detected can be used for color sorting
+        } else {
+            this->detected = false;
+        }
+}
+void Intake::color_check(){
+     int hue = robot.optical->get_hue(); // get color reading
+        if ((hue > COLOR1 && hue < COLOR2)) { // if hue is within a certain range(blue and red)
+            this->detected = true; // detected can be used for color sorting
+        } else {
+            this->detected = false;
+        }
+}
 void Intake::color_sort() {
     if (robot.color_sort) {
-        int hue = robot.optical->get_hue(); // get color reading
-        if (hue > COLOR1 && hue < COLOR2) { // if hue is within a certain range(either blue or red)
-            detected = true; // detected can be used for color sorting
-        } else {
-            detected = false;
-        }
+        color_check(); // update whether a block is detected
         if (detected) { // if detected set inMotion to true to cancel opcontrol intake and start outtaking
             int volt_1 = robot.intake_1->get_voltage(); // store current voltage to restore later
             int volt_2 = robot.intake_2->get_voltage(); // store current voltage to restore later
