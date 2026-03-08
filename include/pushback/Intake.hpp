@@ -62,6 +62,13 @@ class Intake {
          * 
          */
         void color_sort_skills();
+         /**
+         * @brief color sorting for skills. checks color in input(true for checking if there's red and vice versa for blue)
+         * @param true for blue
+         * @param false for red
+         * 
+         */
+        void color_check(bool color);
         /**
          * @brief Checks whether the optical sensor is detecting blocks(either color hence should only be in skills)
          * @attention Meant to be run in a cycle

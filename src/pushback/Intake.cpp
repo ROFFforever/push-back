@@ -17,9 +17,10 @@ Intake::Intake(Robot& robot)
 void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
-            robot.intake_1->move_voltage(9000);
-            robot.intake_2->move_voltage(-4000);
-            robot.intake_3->move_voltage(-4000);
+            // robot.intake_1->move_voltage(9000);
+            // robot.intake_2->move_voltage(-4000);
+            // robot.intake_3->move_voltage(-4000);
+            mid_goal_weak();
             //4000 for midle goal in skills
             //9000 for regular matches
             opcontrol_intake = true; // opcontrol intake is currently running
@@ -78,9 +79,9 @@ void Intake::mid_goal_strong() {
 }
 
 void Intake::mid_goal_weak() {
-    robot.intake_1->move_voltage(5000);
-    robot.intake_2->move_voltage(-4500);
-    robot.intake_3->move_voltage(-2500);
+    robot.intake_1->move_voltage(5000); //old vlaue 5000
+    robot.intake_2->move_voltage(-4000); //old value -4500
+    robot.intake_3->move_voltage(-4000); //old value -2500
 }
 
 void Intake::tall_goal() {
@@ -120,6 +121,23 @@ void Intake::color_check_skills(){
 void Intake::color_check(){
      int hue = robot.optical->get_hue(); // get color reading
         if ((hue > COLOR1 && hue < COLOR2)) { // if hue is within a certain range(blue and red)
+            this->detected = true; // detected can be used for color sorting
+        } else {
+            this->detected = false;
+        }
+}
+void Intake::color_check(bool color){
+     int hue = robot.optical->get_hue(); // get color reading
+    int color11;
+    int color22;
+     if(color){
+        color11 = 200;
+        color22 = 230;
+     }else{
+        color11 = 0;
+        color22 = 6;
+     }
+        if ((hue > color11 && hue < color22)) { // if hue is within a certain range(blue and red)
             this->detected = true; // detected can be used for color sorting
         } else {
             this->detected = false;
