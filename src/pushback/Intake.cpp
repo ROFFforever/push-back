@@ -5,7 +5,7 @@
 namespace pushback {
 Intake::Intake(Robot& robot)
     : robot(robot) {
-    if (robot.color == 0) { // if blue
+    if (robot.color == 0) { 
         COLOR1 = 0;
         COLOR2 = 17;
     } else {
@@ -18,9 +18,10 @@ void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
             robot.intake_1->move_voltage(9000);
-            robot.intake_2->move_voltage(-9000);
-            robot.intake_3->move_voltage(-9000);
+            robot.intake_2->move_voltage(-4000);
+            robot.intake_3->move_voltage(-4000);
             //4000 for midle goal in skills
+            //9000 for regular matches
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) { // outake
             robot.intake_1->move_voltage(-12000);
@@ -33,9 +34,9 @@ void Intake::runIntake() {
             robot.intake_3->move_voltage(12000);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // weaker outake
-             robot.intake_1->move_voltage(6000);
-            robot.intake_2->move_voltage(-6000);
-            robot.intake_3->move_voltage(6000);
+                robot.intake_1->move_voltage(-5000);
+            robot.intake_3->move_voltage(-5000);
+            robot.intake_2->move_voltage(5000);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else {
             robot.intake_2->move_voltage(0);
@@ -132,10 +133,9 @@ void Intake::color_sort() {
             int volt_2 = robot.intake_2->get_voltage(); // store current voltage to restore later
             int volt_3 = robot.intake_3->get_voltage(); // store current voltage to restore later
             inMotion = true;
-            detected = true;
-            pros::delay(0); // do whatever was before and also push block a little more forward
+            pros::delay(60); // do whatever was before and also push block a little more forward
             mid_goal_strong(); // outtake blue block
-            pros::delay(200);
+            pros::delay(400); //wait \to push out ball
             robot.intake_1->move_voltage(volt_1); // restore past voltage
             robot.intake_2->move_voltage(volt_2);
             robot.intake_3->move_voltage(volt_3);
@@ -144,5 +144,21 @@ void Intake::color_sort() {
         }
     }
 }
-
+void Intake::color_sort_skills() {
+        color_check(); // update whether a block is detected
+        if (detected) { // if detected set inMotion to true to cancel opcontrol intake and start outtaking
+            int volt_1 = robot.intake_1->get_voltage(); // store current voltage to restore later
+            int volt_2 = robot.intake_2->get_voltage(); // store current voltage to restore later
+            int volt_3 = robot.intake_3->get_voltage(); // store current voltage to restore later
+            inMotion = true;
+            pros::delay(60); // do whatever was before and also push block a little more forward
+            mid_goal_strong(); // outtake blue block
+            pros::delay(400); //wait \to push out ball
+            robot.intake_1->move_voltage(volt_1); // restore past voltage
+            robot.intake_2->move_voltage(volt_2);
+            robot.intake_3->move_voltage(volt_3);
+        } else if (!detected && !opcontrol_intake) { // if not detected stop intake and motion is now done
+            inMotion = false;
+        }
+}
 } // namespace pushback

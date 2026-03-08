@@ -58,6 +58,11 @@ class Intake {
          */
         void color_sort();
         /**
+         * @brief color sorting for skills 
+         * 
+         */
+        void color_sort_skills();
+        /**
          * @brief Checks whether the optical sensor is detecting blocks(either color hence should only be in skills)
          * @attention Meant to be run in a cycle
          */
