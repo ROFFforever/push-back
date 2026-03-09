@@ -942,6 +942,55 @@ void awp() {
     robot.ram(-80, 1000);
 }
 
+void left_4_plus_3_elims_state_wa_region(){
+    chassis.setPose(-54,18.5, 180); 
+
+    //1
+    chassis.moveToPoint(-45.6, 47.4, 800, {.forwards=false, .minSpeed=1, .earlyExitRange=1}, true);
+    float init_drift=296;
+    wait(init_drift);
+    unloader.firePiston(true);
+    wait(200);
+    chassis.cancelMotion();
+    chassis.turnToHeading(270, 600, {.minSpeed=1, .earlyExitRange=1}, false); // face towards matchloader
+    intake.intake();
+    moveStraight(10, 890, {.maxSpeed=70, .minSpeed=69}, true); //use moveStraight so it's not going at a different angle
+    wait(200);
+    chassis.setPose(chassis.getPose().x, 70-robot.get_distance_right_side(), chassis.getPose().theta); // reset again
+
+    moveStraight(-6, 150, {.minSpeed=50, .earlyExitRange=2}, false); //back up from matchloader
+
+    chassis.moveToPose(-28, 46.6, 270, 900, {.forwards=false, .lead=0.3, .minSpeed=10, .earlyExitRange=1}, false); // go back into goal
+    robot.ram(-105, 250); //get into goal
+        score_toggle.firePiston(true); // open up scoring hood so we can allign properly
+        unloader.firePiston(false);
+    robot.ram(-80, 700); //give time to score the 4 balls
+      float angError = fabs(chassis.getPose().theta - 270);
+    chassis.setPose(
+        angError < 3.5 ? -29.5 : chassis.getPose().x, angError < 3.5 ? 46.8 : chassis.getPose().y,
+        chassis.getPose()
+            .theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted far
+
+
+    
+    //2
+    chassis.swingToHeading(180, DriveSide::LEFT, 720, {.maxSpeed=105, .minSpeed=90, .earlyExitRange=2}, false);
+    chassis.moveToPoint(-24, 24, 700, {.minSpeed=1, .earlyExitRange=1}, true); //go get trio of balls
+    wait(350);
+    unloader.firePiston(true);
+    chassis.turnToPoint(0,0, 600, {.forwards=false}, true);
+    wait(400); //when its almost done turning
+    chassis.cancelMotion(); //start the backing into goal part
+    chassis.moveToPose(-13, 13, 315, 1300, {.forwards=false, .lead=0.3, .minSpeed=1, .earlyExitRange=1}, true); //head over to midgoal
+    wait(300); //wait a bit for the balls to travel up the bot
+    intake.outake(); //get the balls in a prime state to score midgoal
+    intake_1.move_voltage(0); //don't move this stage so we don't loose any balls
+    chassis.waitUntilDone(); 
+    intake.mid_goal(); //score mid goal
+    intake_3.move_voltage(-5500);
+    robot.ram(-80, 600); //score for a bit
+
+}
 void right_4_3() {
     // debug tasks + reset tasks
     pros::Task debug(print_pos);
@@ -1511,7 +1560,7 @@ void elimLeftSafe() {
 void autonomous() {
     pros::Task log(logData); // log data
 
-    awp();
+    left_4_plus_3_elims_state_wa_region();
 
     //  intake.outake(); // get them unstuck
     // intake_1.move_voltage(0); // dont move the first stage as to not loose balls
