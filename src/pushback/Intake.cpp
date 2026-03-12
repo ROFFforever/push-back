@@ -17,10 +17,9 @@ Intake::Intake(Robot& robot)
 void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
-            // robot.intake_1->move_voltage(9000);
-            // robot.intake_2->move_voltage(-4000);
-            // robot.intake_3->move_voltage(-4000);
-            mid_goal_weak();
+            robot.intake_1->move_voltage(9000);
+            robot.intake_2->move_voltage(-9000);
+            robot.intake_3->move_voltage(-9000);
             //4000 for midle goal in skills
             //9000 for regular matches
             opcontrol_intake = true; // opcontrol intake is currently running
@@ -68,8 +67,8 @@ void Intake::stop() {
 }
 
 void Intake::mid_goal() {
-    robot.intake_1->move_voltage(5000);
-    robot.intake_2->move_voltage(-9000);
+    robot.intake_1->move_voltage(12000);
+    robot.intake_2->move_voltage(-12000);
     robot.intake_3->move_voltage(-3500);
 }
 void Intake::mid_goal_strong() {
@@ -81,7 +80,7 @@ void Intake::mid_goal_strong() {
 void Intake::mid_goal_weak() {
     robot.intake_1->move_voltage(5000); //old vlaue 5000
     robot.intake_2->move_voltage(-4000); //old value -4500
-    robot.intake_3->move_voltage(-4000); //old value -2500
+    robot.intake_3->move_voltage(-3900); //old value -2500
 }
 
 void Intake::tall_goal() {
