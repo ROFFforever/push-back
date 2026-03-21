@@ -10,11 +10,11 @@ import shutil
 import filecmp
 from datetime import datetime
 
-# --- SETTINGS ---
+#settings
 LOG_FILE = "logs.txt"
 ARCHIVE_DIR = "oldLogs"
 FIELD_IMAGE = "field.png"
-TIME_STEP = 0.05
+TIME_STEP = 0.05 #have to match with rate of data being sent...
 ROBOT_SIZE_IN = 12
 POINT_SIZE = 25
 
@@ -29,9 +29,11 @@ def copy_to_archive():
             break
     if not is_duplicate:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        print("Copying file...")
         shutil.copy2(LOG_FILE, os.path.join(ARCHIVE_DIR, f"oldLog_{timestamp}.txt"))
 
 def load_and_calculate():
+    print("Storing data into array...")
     x, y, h = [], [], []
     if not os.path.exists(LOG_FILE): return None
     try:
@@ -49,7 +51,7 @@ def load_and_calculate():
     except Exception as e:
         print(f"File Load Error: {e}")
         return None
-    
+    print("Calculating Velocities...")
     if len(x) < 2: return None
     x_arr, y_arr, h_arr = np.array(x), np.array(y), np.array(h)
     v = np.sqrt(np.gradient(x_arr, TIME_STEP)**2 + np.gradient(y_arr, TIME_STEP)**2)
