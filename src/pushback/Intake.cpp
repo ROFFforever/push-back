@@ -17,9 +17,10 @@ Intake::Intake(Robot& robot)
 void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
-            robot.intake_1->move_voltage(9000);
-            robot.intake_2->move_voltage(-9000);
-            robot.intake_3->move_voltage(-9000);
+            robot.intake_1->move_voltage(12000);
+            robot.intake_2->move_voltage(-12000);
+            robot.intake_3->move_voltage(-12000);
+            robot.piston_4->firePiston(true);
             //4000 for midle goal in skills
             //9000 for regular matches
             opcontrol_intake = true; // opcontrol intake is currently running
@@ -27,18 +28,22 @@ void Intake::runIntake() {
             robot.intake_1->move_voltage(-12000);
             robot.intake_3->move_voltage(-12000);
             robot.intake_2->move_voltage(12000);
+            robot.piston_4->firePiston(false);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) { // intake
             robot.intake_1->move_voltage(12000);
             robot.intake_2->move_voltage(-12000);
             robot.intake_3->move_voltage(12000);
+            robot.piston_4->firePiston(false);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // weaker outake
-                robot.intake_1->move_voltage(-5000);
-            robot.intake_3->move_voltage(-5000);
-            robot.intake_2->move_voltage(5000);
+                robot.intake_1->move_voltage(-8000);
+            robot.intake_3->move_voltage(-8000);
+            robot.intake_2->move_voltage(8000);
+            robot.piston_4->firePiston(false);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else {
+            robot.piston_4->firePiston(false);
             robot.intake_2->move_voltage(0);
             robot.intake_1->move_voltage(0);
             robot.intake_3->move_voltage(0);
@@ -68,7 +73,7 @@ void Intake::stop() {
 
 void Intake::mid_goal() {
     robot.intake_1->move_voltage(12000);
-    robot.intake_2->move_voltage(-12000);
+    robot.intake_2->move_voltage(-5000);
     robot.intake_3->move_voltage(-3500);
 }
 void Intake::mid_goal_strong() {
@@ -79,8 +84,8 @@ void Intake::mid_goal_strong() {
 
 void Intake::mid_goal_weak() {
     robot.intake_1->move_voltage(5000); //old vlaue 5000
-    robot.intake_2->move_voltage(-4000); //old value -4500
-    robot.intake_3->move_voltage(-3900); //old value -2500
+    robot.intake_2->move_voltage(-3800); //old value -4500
+    robot.intake_3->move_voltage(-2500); //old value -2500
 }
 
 void Intake::tall_goal() {

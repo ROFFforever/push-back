@@ -9,55 +9,55 @@
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // drivetrain motors
-pros::MotorGroup leftMotors({-13, -14, -15},
+pros::MotorGroup leftMotors({-11, -12, 13},
                             pros::MotorGearset::blue); // left motor group - ports 3 (reversed), 4, 5 (reversed)
-pros::MotorGroup rightMotors({16, 17, 18},
+pros::MotorGroup rightMotors({-18, 19, 20},
                              pros::MotorGearset::blue); // right motor group - ports 6 (reversed), 7, 9
 
 // These are all the intake motors
-pros::Motor intake_1(19, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees); // first stage
-pros::Motor intake_2(20, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees); // mid stage
-pros::Motor intake_3(11, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees); // high stage
-pros::Optical optical(3);
-pros::Imu imu(12);
+pros::Motor intake_1(10, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees); // first stage
+pros::Motor intake_2(1, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees); // mid stage
+pros::Motor intake_3(121, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees); // high stage
+pros::Optical optical(120);
+pros::Imu imu(2);
 // tracking wheels
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
-pros::Rotation horizontalEnc(10);
+pros::Rotation horizontalEnc(100);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
-pros::Rotation verticalEnc(9);
+pros::Rotation verticalEnc(-14);
 lemlib::TrackingWheel horizontal(&horizontalEnc, 2.0, 0);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, 2.0, 0);
+lemlib::TrackingWheel vertical(&verticalEnc, 2.0, -0.4);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              10.8, // 10 inch track width
+                              9.8, // 10 inch track width
                               3.25, // using new 4" omnis
                               450, // drivetrain rpm is 450
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(8.5, // proportional gain (kP)
+lemlib::ControllerSettings linearController(7.5, // proportional gain (kP)
                                             0, // integral gain (kI)
-                                            9, // derivative gain (kD)
+                                            22, // derivative gain (kD)
                                             0, // anti windup
                                             1, // small error range, in inches
                                             100, // small error range timeout, in milliseconds
                                             3, // large error range, in inches
                                             500, // large error range timeout, in milliseconds
-                                            0 // maximum acceleration (slew)
+                                            100 // maximum acceleration (slew)
 );
 // angular PID controller
-lemlib::ControllerSettings angularController(3.95, // proportional gain (kP)
+lemlib::ControllerSettings angularController(5.8, // proportional gain (kP)
                                              0, // integral gain (kI)
-                                             29, // derivative gain (kD)
+                                             44, // derivative gain (kD)
                                              0, // anti windup
-                                             1, // small error range, in degrees
-                                             300, // small error range timeout, in milliseconds
-                                             3, // large error range, in degrees
-                                             900, // large error range timeout, in milliseconds
+                                             5, // small error range, in degrees
+                                             260, // small error range timeout, in milliseconds
+                                             10, // large error range, in degrees
+                                             550, // large error range timeout, in milliseconds
                                              0 // maximum acceleration (slew)
 );
 
@@ -81,15 +81,18 @@ lemlib::ExpoDriveCurve steerCurve(3, // joystick deadband out of 127
                                   1.019 // expo curve gain
 );
 // Wall Distance Sensors
-pros::Distance distance_sensor_left_side(2);
-pros::Distance distance_sensor_right_side(10);
+pros::Distance distance_sensor_left_side(3);
+pros::Distance distance_sensor_right_side(8);
 // Pistons
-pushback::Piston unloader(2, pros::E_CONTROLLER_DIGITAL_DOWN);
-pushback::Piston score_toggle(3, pros::E_CONTROLLER_DIGITAL_B);
-pushback::Piston descore(1, pros::E_CONTROLLER_DIGITAL_Y);
+//1 is middle goal intake
+//2 is hood
+pushback::Piston unloader(4, pros::E_CONTROLLER_DIGITAL_DOWN);
+pushback::Piston score_toggle(2, pros::E_CONTROLLER_DIGITAL_B); //midle goal
+pushback::Piston descore(3, pros::E_CONTROLLER_DIGITAL_Y);
+pushback::Piston middle_goal(1, pros::E_CONTROLLER_DIGITAL_A); 
 // create the chassis
 lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors, &throttleCurve, &steerCurve);
-pushback::Robot robot(chassis, &intake_1, &intake_2, &intake_3, &descore, &unloader, &descore, nullptr,
+pushback::Robot robot(chassis, &intake_1, &intake_2, &intake_3, &descore, &unloader, &descore, &middle_goal,
                       &distance_sensor_left_side, &distance_sensor_right_side, &imu, controller, &optical, 0);
 
 // Intake mechanism
@@ -161,8 +164,9 @@ void initialize() {
     chassis.calibrate(); // calibrate sensors
     unloader.register_controller(&robot);
     descore.register_controller(&robot);
+    middle_goal.register_controller(&robot);
     score_toggle.register_controller(&robot);
-    robot.set_distance_offset(4); // set distance sensor offset in inches
+    robot.set_distance_offset(1.5); // set distance sensor offset in inches
 }
 
 /**
@@ -235,13 +239,26 @@ void checkColorGaps() {
     }
 }
 
+//LT = left motor temps
+//RT = right motor temps
 void logData() {
+    //mark the start of data stream
+    printf("Data Start;\n");
+    std::vector<double> leftTemps = leftMotors.get_temperature_all();
+    std::vector<double> rightTemps = rightMotors.get_temperature_all();
+    //print motor temps
+    printf("LT; %.2f,%.2f,%.2f\n", leftTemps[0], leftTemps[1], leftTemps[2]);
+    printf("RT; %.2f,%.2f,%.2f\n", rightTemps[0], rightTemps[1], rightTemps[2]);
+    printf("IT1; %.2f\n", intake_1.get_temperature());
+    printf("IT2; %.2f\n", intake_2.get_temperature());
     while (true) {
         lemlib::Pose pos = chassis.getPose();
-        printf("%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.theta);
+
+        printf("Pos; %.2f,%.2f,%.2f\n", pos.x, pos.y, pos.theta);
         pros::delay(50);
     }
 }
+
 
 // AUTONS
 void left_side_red() {
@@ -307,10 +324,10 @@ void skills() {
     chassis.waitUntilDone();
     chassis.turnToPoint(0, 0, 300, {.forwards = false}, true);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD); // hold so robot doesn't drift
-    intake.mid_goal(); // score mid goal
+    intake.mid_goal_strong(); // score mid goal
         unloader.firePiston(true);
     moveStraight(2, 200, {}, false);
-    wait(400); // give time to score
+    wait(600); // give time to score
     intake.outake(); // finished
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     chassis.moveToPoint(-46, 45.5, 1600, {.maxSpeed = 100}, true); // go towards matchloaders
@@ -338,6 +355,9 @@ void skills() {
     chassis.turnToHeading(88, 230); // make sure we not off 
     intake.stop();
     chassis.moveToPoint(50, 57, 2200, {}, true); // go to other side of field
+    intake.outake();
+    wait(100);
+    intake.intake();
     error = 25 - chassis.getPose().x;
     while (error > 0.5) { // once past x=30 slow down basically
         error = 30 - chassis.getPose().x;
@@ -395,13 +415,13 @@ void skills() {
 
     // TODO REMOVE THIS
     //chassis.setPose(28, 46.8, 90); // if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
-    // chassis.setPose(70 - robot.get_distance_left_side(), -17, 180); // used to be -17.5
-    // descore.firePiston(true);
+    //chassis.setPose(70 - robot.get_distance_left_side(), -17, 180); // used to be -17.5
+    //descore.firePiston(true);
     //   chassis.setPose(-28, -46.8,
     //                  270); //if robot isn't within 3.5 degrees(aka its not straight on) don't reset angle
     //  unloader.firePiston(true);
     //  score_toggle.firePiston(true);
-    // wait(1000);
+    //wait(1000);
 
     // #2
     moveStraight(6, 400, {}, false); // move so dont hit the goals
@@ -439,29 +459,30 @@ void skills() {
     }
     wait(120); // go a little more to be safe
     chassis.arcade(0, 0); // stop
-    robot.ram(-60, 1700); // allign with parking zone
+    chassis.turnToHeading(180, 500, {}, false);
+    robot.ram(-60, 1700);
     wait(200); // wait for robot to settle
     chassis.setPose(70 - robot.get_distance_left_side(), -17.0f, chassis.getPose().theta); // used to be -17.5
     wait(20); // let register
 
     // #3
     chassis.moveToPoint(61, -28, 700, {.maxSpeed = 60, .minSpeed = 1, .earlyExitRange = 1}, false);
-    chassis.turnToPoint(22.3, -17.37, 700, {.maxSpeed = 60}, false);
+    chassis.turnToPoint(23.4, -18.59, 700, {.maxSpeed = 60}, false);
     intake.intake();
-    chassis.moveToPoint(22.3, -18.1, 900, {.maxSpeed = 100}, false);
+    chassis.moveToPoint(22.7, -18.67, 900, {.maxSpeed = 90}, false);
     intake.stop();
-    chassis.moveToPoint(8.5, -8.5, 1000, {.forwards = false, .maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 2},
-                        false);
+    chassis.moveToPoint(9.89, -8.89, 1300, {.forwards = false, .maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 2},
+                        true);
     intake.outake(); // get them unstuck
     intake_1.move_voltage(0); // dont move the first stage as to not loose balls
-    wait(320); // give the balls time to get unstuck
+    wait(500); // give the balls time to get unstuck
     intake.stop();
     chassis.waitUntilDone();
     moveStraight(1.95, 200, {}, true);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE); // hold so robot doesn't drift
     intake.mid_goal(); // score mid goal
-    wait(1400); // give time to score
-    moveStraight(1.4, 200, {}, false); //get ot of goal
+    wait(800); // give time to score
+    moveStraight(1.6, 240, {}, false); //get ot of goal
     intake.mid_goal_weak();
     robot.optical->set_led_pwm(100); // turn on optical sensor led for auton
     lemlib::Timer scoreTime(1900);
@@ -503,10 +524,20 @@ void skills() {
     moveStraight(7.5, 450, {},
                  true); // move so dont hit the goals wait(100); unloader.firePiston(false); // Matchloader up
     chassis.waitUntilDone();
+    intake.intake();
     chassis.moveToPoint(-50, -57.6, 2200, {}, true); // go to other side of field
+    intake.outake();
+    wait(100);
+    intake.intake();
     error = chassis.getPose().x + 30;
+    lemlib::Timer reset_point(800); //0.4 second in reset position
+    bool reset = false;
     while (error > 0.5) { // once past x=-30 slow down basically
         error = chassis.getPose().x + 30;
+        if(reset_point.isDone() && !reset){
+            chassis.setPose(chassis.getPose().x, robot.get_distance_left_side() - 70, chassis.getPose().theta);
+            reset= true;
+        }
         wait(20);
     }
     chassis.cancelMotion();
@@ -516,7 +547,7 @@ void skills() {
     chassis.turnToHeading(270, 300, {}, false);
     chassis.setPose(chassis.getPose().x, robot.get_distance_left_side() + 0.5 - 70,
                     chassis.getPose().theta); //                                                  // goal
-    chassis.moveToPose(-24, -46.4, -90, 1200, {.forwards = false, .lead = 0.4, .maxSpeed = 95},
+    chassis.moveToPose(-24, -46.9, -90, 1200, {.forwards = false, .lead = 0.4, .maxSpeed = 95},
                        false); // get into the goal
     chassis.turnToHeading(-90, 300, {.minSpeed = 50, .earlyExitRange = 1}, false);
     robot.ram(-100, 300); // get into goal alligner
@@ -858,22 +889,26 @@ void awp() {
 
     // #1
     chassis.setPose(start_pose);
-    // descore.firePiston(true);
-    chassis.moveToPoint(-37.267, -44.8, 920, {.maxSpeed = 70, .minSpeed = 1, .earlyExitRange = 0.3}, false); //
-    rb(50);
+    chassis.moveToPoint(-48.24, -43.23, 620, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 0.3}, true); //
+    wait(100);
     unloader.firePiston(true);
-    chassis.turnToHeading(270, 750, {.minSpeed = 1, .earlyExitRange = 1}, false);
+    chassis.waitUntilDone();
+    chassis.turnToHeading(270, 650, {.minSpeed = 1, .earlyExitRange = 1}, false);
     intake.intake();
-    chassis.moveToPose(-55, -49, 270, 900, {.lead = 0.3, .minSpeed = 10, .earlyExitRange = 1}, false);
-    robot.ram(80, 740); //get matchloads
-    moveStraight(-9, 300, {.minSpeed = 1, .earlyExitRange = 0.5}, false);
-    chassis.moveToPose(-30.535, -48.6, 270, 900, {.forwards = false, .lead = 0.2, .minSpeed = 55, .earlyExitRange = 1},
+        lemlib::Pose pose = chassis.getPose();
+        chassis.moveToPoint(pose.x + 20 * sin(lemlib::degToRad(pose.theta)),
+                        pose.y + 20 * cos(lemlib::degToRad(pose.theta)), 850, {.maxSpeed=70, .minSpeed=69}, false); //add 2 for drift in y direction
+    moveStraight(-9, 300, {.minSpeed = 1, .earlyExitRange = 0.5}, true);
+    wait(190);
+     chassis.setPose(chassis.getPose().x, robot.get_distance_left_side()-70, chassis.getPose().theta); // reset again
+     chassis.waitUntilDone();
+    chassis.moveToPose(-30.535, -46.8, 270, 900, {.forwards = false, .lead = 0.2, .minSpeed = 55, .earlyExitRange = 1},
                        true); // go back into goal
     chassis.waitUntilDone();
     score_toggle.firePiston(true); // open up scoring hood
     robot.ram(-105, 300); // get into goal
     intake.intake(); // start scoring
-    robot.ram(-85, 750);
+    robot.ram(-85, 950); //score
     unloader.firePiston(false); // Matchloader up
     float angError = fabs(chassis.getPose().theta - 270);
     chassis.setPose(
@@ -887,7 +922,7 @@ void awp() {
     intake_1.move_voltage(0);
     chassis.waitUntilDone();
     intake.stop();
-    chassis.swingToHeading(20, DriveSide::RIGHT, 650, {.minSpeed = 1, .earlyExitRange = 1}, false);
+    chassis.swingToHeading(20, DriveSide::RIGHT, 600, {.minSpeed = 1, .earlyExitRange = 2}, false);
     score_toggle.firePiston(false); // close scoring hood
     intake.intake();
     chassis.moveToPose(-19.7, -13.1, 360, 1000, {.lead = 0.4, .minSpeed = 50, .earlyExitRange = 1},
@@ -914,23 +949,23 @@ void awp() {
     robot.ram(-105, 200);
 
     intake.intake(); // start scoring
-    robot.ram(-85, 790); //score like 4-5 balls
+    robot.ram(-85, 1030); //score like 4-5 balls
     angError = fabs(chassis.getPose().theta - 270);
     if (angError < 3.5) { chassis.setPose(-28, 46.8, chassis.getPose().theta); } // reset position only if alligned
     intake.outake();
     intake_1.move_voltage(0); // dont let balls out
-    chassis.moveToPose(-55.5, 45.7, 270, 950, {.forwards = true, .lead = 0.3, .minSpeed = 10, .earlyExitRange = 1.5},
+    chassis.moveToPose(-56.2, 45.7, 270, 950, {.forwards = true, .lead = 0.3, .minSpeed = 10, .earlyExitRange = 1.5},
                        true); //go to matchloader
     wait(100);
     intake.stop();
     score_toggle.firePiston(false);
     intake.intake();
     chassis.waitUntilDone();
-    robot.ram(87, 400); // get balls
-    robot.ram(80,350); //go a bit slower
+    robot.ram(60, 400); // get balls
+    robot.ram(60,440); //go a bit slower
     moveStraight(-6, 200, {.forwards = false, .minSpeed = 1, .earlyExitRange = 0.5}, false);
     chassis.moveToPose(-11.6, 11, 315, 1400, {.forwards=false, .minSpeed=1, .earlyExitRange=0.5}, true); //head over midgoal
-    wait(350); //wait until a little closer
+    wait(800); //wait until a little closer
     intake.outake();
     intake_1.move_voltage(0);
     wait(200);
@@ -939,22 +974,107 @@ void awp() {
     chassis.moveToPoint(-14.1, 13.5, 900, {.forwards=false, .minSpeed=1, .earlyExitRange=1.3}, true); //switch over to moveToPoint to speed up the motion
     wait(550);
     intake.mid_goal();
-    intake_3.move_voltage(-5500);
+    intake_3.move_voltage(-3500);
     chassis.waitUntilDone();
     intake.mid_goal(); // score mid goal
-    intake_3.move_voltage(-5500);
+    intake_3.move_voltage(-4500);
     robot.ram(-80, 1000);
 }
+void left_4_plus_3_elim_state_real(){
+    lemlib::Timer auton(15000);
+    // Starting Position
+    lemlib::Pose start_pose(robot.get_distance_left_side() - 70, 20, 0);
 
-void left_4_plus_3_elims_state_wa_region_team_98040C_long_goal_first(){
-    chassis.setPose(-54,18.5, 180); 
+    // #1
+    chassis.setPose(start_pose);
+    chassis.moveToPoint(-48.24, 43.23, 620, {.maxSpeed = 100, .minSpeed = 1, .earlyExitRange = 0.3}, true); //
+    wait(100);
+    unloader.firePiston(true);
+    chassis.waitUntilDone();
+    chassis.turnToHeading(270, 650, {.minSpeed = 1, .earlyExitRange = 1}, false);
+    intake.intake();
+        lemlib::Pose pose = chassis.getPose();
+        chassis.moveToPoint(pose.x + 20 * sin(lemlib::degToRad(pose.theta)),
+                        pose.y + 20 * cos(lemlib::degToRad(pose.theta)), 1000, {.maxSpeed=60, .minSpeed=59}, false); //add 2 for drift in y direction
+    moveStraight(-6, 300, {.minSpeed = 1, .earlyExitRange = 0.5}, true);
+    wait(100);
+     chassis.setPose(chassis.getPose().x, 70-robot.get_distance_right_side(), chassis.getPose().theta); // reset again
+        chassis.waitUntilDone();
+    chassis.moveToPose(-30.535, 47, 270, 900, {.forwards = false, .lead = 0.2, .minSpeed = 55, .earlyExitRange = 1},
+                       true); // go back into goal
+    chassis.waitUntilDone();
+    score_toggle.firePiston(true); // open up scoring hood
+    robot.ram(-105, 300); // get into goal
+    intake.intake(); // start scoring
+    robot.ram(-85, 950); //score
+    unloader.firePiston(false); // Matchloader up
+    float angError = fabs(chassis.getPose().theta - 270);
+    chassis.setPose(
+        angError < 3.5 ? -29.5 : chassis.getPose().x, angError < 3.5 ? -46.8 : chassis.getPose().y,
+        chassis.getPose()
+            .theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted far
+
+    
+    //2
+    chassis.swingToHeading(160, DriveSide::LEFT, 720, {.maxSpeed=126, .minSpeed=125, .earlyExitRange=2}, true);
+    angError = chassis.getPose().theta  + 180; 
+    lemlib::Timer maxTime(680);
+    while(angError > 2 && !maxTime.isDone()){ //check if within time and close to 180 to reset pos
+        angError = chassis.getPose().theta  + 180; 
+        wait(13);
+    }
+
+    chassis.setPose(robot.get_distance_right_side() - 70, chassis.getPose().y, chassis.getPose().theta); //quick reset when robot is relatviely straight with the wall
+    chassis.waitUntilDone();
+    score_toggle.firePiston(false); //close hood
+    intake.intake();
+    chassis.moveToPoint(-21.5, 21.5, 1000, {}, true); //go get trio of balls
+    //capture the balls and almost instantly go back up
+    wait(250);
+    unloader.firePiston(true);
+    wait(400);
+    unloader.firePiston(false); 
+    chassis.waitUntilDone(); //once we get the balls stop
+    chassis.turnToPoint(0,-3, 700, {.forwards=false}, false);
+    // chassis.turnToPoint(0,2, 300, {}, false); //TODO maybe add this as turning is ah
+    chassis.moveToPoint(-9,9, 800, {.forwards=false, .maxSpeed=90}, true);
+    wait(350);
+    intake.outake();
+    intake_1.move_voltage(0);
+    wait(200);
+        intake.mid_goal();
+    chassis.waitUntilDone();
+    robot.ram(-80, 2000);
+    moveStraight(8, 450, {}, false);
+    descore.firePiston(true);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    robot.ram(-90, 3000);
+
+
+
+    
+
+}
+
+void matchloader_test(){
+    chassis.setPose(0,0,0);
+    unloader.firePiston(true);
+    wait(500);
+    intake.intake();
+    lemlib::Pose pose = chassis.getPose();
+    chassis.moveToPoint(pose.x + 20 * sin(lemlib::degToRad(pose.theta)),
+                        pose.y + 20 * cos(lemlib::degToRad(pose.theta)), 1240, {.maxSpeed=49, .minSpeed=48}, false); //add 2 for drift in y direction
+
+}
+void left_4_plus_3_elims_state_wa_region_team_98040C_long_goal_first_way_too_inconsistent_dont_ues_this_one(){
+    chassis.setPose(-49,17, 180); 
 
     //1
     chassis.moveToPoint(-45.6, 47.4, 800, {.forwards=false, .minSpeed=1, .earlyExitRange=1}, true);
     lemlib::Timer lower_unload(240);
-    float error = 34.5 - chassis.getPose().y; 
+    float error = 29 - chassis.getPose().y; 
     while(error > 1){
-        error = 34.5 - chassis.getPose().y; 
+        error = 29 - chassis.getPose().y; 
         if(lower_unload.isDone()){
             unloader.firePiston(true);
         }
@@ -965,92 +1085,89 @@ void left_4_plus_3_elims_state_wa_region_team_98040C_long_goal_first(){
     intake.intake();
     lemlib::Pose pose = chassis.getPose();
     chassis.moveToPoint(pose.x + 20 * sin(lemlib::degToRad(pose.theta)),
-                        pose.y + 20 * cos(lemlib::degToRad(pose.theta)), 950, {.maxSpeed=70, .minSpeed=69}, false); //add 2 for drift in y direction
+                        pose.y + 20 * cos(lemlib::degToRad(pose.theta)), 1240, {.maxSpeed=45, .minSpeed=44}, false); //add 2 for drift in y direction
 
     moveStraight(-6, 150, {.minSpeed=119, .earlyExitRange=2}, true); //back up from matchloader
     wait(90);
-    chassis.setPose(chassis.getPose().x, 70-robot.get_distance_right_side(), chassis.getPose().theta); // reset again
+    chassis.setPose(chassis.getPose().x, 70-robot.get_distance_right_side()-2.5, chassis.getPose().theta); // reset again
     chassis.cancelMotion();
 
-    chassis.moveToPose(-28, 46.9, 270, 900, {.forwards=false, .lead=0.3, .minSpeed=80, .earlyExitRange=1}, false); // go back into goal
+    chassis.moveToPose(-28, 47.5, 270, 900, {.forwards=false, .lead=0.3, .minSpeed=110, .earlyExitRange=1}, false); // go back into goal
     robot.ram(-105, 250); //get into goal
+    intake.outake();
+    wait(250);
+    intake.intake();
         score_toggle.firePiston(true); // open up scoring hood so we can allign properly
         unloader.firePiston(false);
-    robot.ram(-80, 610); //give time to score the 4 balls
-      float angError = fabs(chassis.getPose().theta - 270);
-    if(angError < 3.5){
-    chassis.setPose(
-        -29.5,  46.8,
-        chassis.getPose()
-            .theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted fa
-    }else if(angError < 16){ //else if its a little mis alligned use wall sensor
-        chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_right_side(), chassis.getPose().theta);
-    }
-    
-
-    
-    //2
-    chassis.swingToHeading(160, DriveSide::LEFT, 720, {.maxSpeed=126, .minSpeed=125, .earlyExitRange=2}, true);
-    angError = chassis.getPose().theta  - 180; 
-    lemlib::Timer maxTime(680);
-    while(angError > 2 && !maxTime.isDone()){ //check if within time and close to 180 to reset pos
-        angError = chassis.getPose().theta  - 180; 
-        wait(13);
-    }
-    chassis.setPose(robot.get_distance_right_side() - 70, chassis.getPose().y, chassis.getPose().theta); //quick reset when robot is relatviely straight with the wall
-    chassis.waitUntilDone();
-    score_toggle.firePiston(false); //close hood
-    intake.intake();
-    chassis.moveToPoint(-23, 24, 900, {.minSpeed=110, .earlyExitRange=1}, true); //go get trio of balls
-    lemlib::Timer ballCapture(250);
-    error = chassis.getPose().y - 30; 
-    while(error > 1){
-        error = chassis.getPose().y - 30; 
-        wait(20); //dont hog CPU
-        if(ballCapture.isDone()){
-            unloader.firePiston(true);
-        }
-    }
-    chassis.cancelMotion(); //once we get the balls stop
-    chassis.moveToPoint(-8, 9, 1200, {.forwards=false, .minSpeed=80, .earlyExitRange=1}, true); //head over to midgoal
-    lemlib::Timer middle_intake(450);
-    lemlib::Timer max_time(1200);
-    error = -13 - chassis.getPose().x;
-    while(error > 1 && !max_time.isDone()){
-        error = -13 - chassis.getPose().x;
-         if(middle_intake.isDone()){
-        intake.mid_goal(); //score mid goal
-        intake_1.move_voltage(12000);
-        intake_3.move_voltage(-9000);
-         }
-         wait(18); //dont hog cpu
-    }
-    chassis.cancelMotion(); 
-    chassis.turnToPoint(0,-3, 400, {.forwards=false}, false);
-    // chassis.turnToPoint(0,2, 300, {}, false); //TODO maybe add this as turning is ah
-    robot.ram(-80, 600); //score for a bit
-      unloader.firePiston(false);
-          robot.ram(-80, 600); //score for a bit
-    moveStraight(5, 170, {}, true);
-    wait(100);
-    chassis.cancelMotion();
-
-
-    chassis.moveToPoint(-34, 41, 1300, {.minSpeed=100, .earlyExitRange=1}, true);
-    error = 29.5 - chassis.getPose().y; //cancel motion once past y=30
-    lemlib::Timer wingTime(250);
-     while(error > 1){
-        error = 29.5 - chassis.getPose().y; 
-        wait(15);
-        if(wingTime.isDone()){
-            descore.firePiston(true);
-        }
-    }
-    chassis.cancelMotion();
-    chassis.turnToHeading(270, 450, {.minSpeed=95, .earlyExitRange=1}, false);
-    descore.firePiston(false);
+    robot.ram(-80, 1000); //give time to score the 4 balls
+    moveStraight(8.5, 450, {}, false);
+    chassis.turnToHeading(180, 650, {}, false);
+    moveStraight(9.2, 500, {}, false);
+    chassis.turnToHeading(-90, 600, {}, false);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    robot.ram(-90, 900); //go back
+    robot.ram(-105, 830);
+    //   float angError = fabs(chassis.getPose().theta - 270);
+    // if(angError < 3.5){
+    // chassis.setPose(
+    //     -29.5,  46.8,
+    //     chassis.getPose()
+    //         .theta); // reset y and x, dont reset angle because not too far in auton, angle shouldn't have drifted fa
+    // }else if(angError < 16){ //else if its a little mis alligned use wall sensor
+    //     chassis.setPose(chassis.getPose().x, 70 - robot.get_distance_right_side(), chassis.getPose().theta);
+    // }
+    // chassis.moveToPoint(-15, 15, 1200, {.minSpeed=70, .earlyExitRange=1}, true); //go get trio of balls
+    // chassis.turnToPoint(0, -4.3, 650, {}, false);
+    // intake.mid_goal();
+    // robot.ram(-80, 1400);
+    
+
+    
+    // //2
+    // chassis.swingToHeading(160, DriveSide::LEFT, 720, {.maxSpeed=126, .minSpeed=125, .earlyExitRange=2}, true);
+    // angError = chassis.getPose().theta  - 180; 
+    // lemlib::Timer maxTime(680);
+    // while(angError > 2 && !maxTime.isDone()){ //check if within time and close to 180 to reset pos
+    //     angError = chassis.getPose().theta  - 180; 
+    //     wait(13);
+    // }
+    // chassis.setPose(robot.get_distance_right_side() - 70, chassis.getPose().y, chassis.getPose().theta); //quick reset when robot is relatviely straight with the wall
+    // chassis.waitUntilDone();
+    // score_toggle.firePiston(false); //close hood
+    // intake.intake();
+    // chassis.moveToPose(-13, 15, 130, 1500, {.minSpeed=100, .earlyExitRange=1}, true); //go get trio of balls
+    // lemlib::Timer ballCapture(250);
+
+    // //capture the balls and almost instantly go back up
+    // wait(250);
+    // unloader.firePiston(true);
+    // wait(250);
+    // unloader.firePiston(false); 
+    // chassis.waitUntilDone(); //once we get the balls stop
+    // chassis.turnToPoint(0,-3, 400, {.forwards=false}, false);
+    // // chassis.turnToPoint(0,2, 300, {}, false); //TODO maybe add this as turning is ah
+    // robot.ram(-80, 600); //score for a bit
+    //   unloader.firePiston(false);
+    //       robot.ram(-80, 600); //score for a bit
+    // moveStraight(5, 170, {}, true);
+    // wait(100);
+    // chassis.cancelMotion();
+
+
+    // chassis.moveToPoint(-34, 41, 1300, {.minSpeed=100, .earlyExitRange=1}, true);
+    // error = 29.5 - chassis.getPose().y; //cancel motion once past y=30
+    // lemlib::Timer wingTime(250);
+    //  while(error > 1){
+    //     error = 29.5 - chassis.getPose().y; 
+    //     wait(15);
+    //     if(wingTime.isDone()){
+    //         descore.firePiston(true);
+    //     }
+    // }
+    // chassis.cancelMotion();
+    // chassis.turnToHeading(270, 450, {.minSpeed=95, .earlyExitRange=1}, false);
+    // descore.firePiston(false);
+    // chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    // robot.ram(-90, 900); //go back
 
 }
 void right_4_3() {
@@ -1621,8 +1738,9 @@ void elimLeftSafe() {
  */
 void autonomous() {
     pros::Task log(logData); // log data
+    left_4_plus_3_elims_state_wa_region_team_98040C_long_goal_first_way_too_inconsistent_dont_ues_this_one();
 
-    left_4_plus_3_elims_state_wa_region_team_98040C_long_goal_first();
+    
 
     //  intake.outake(); // get them unstuck
     // intake_1.move_voltage(0); // dont move the first stage as to not loose balls
@@ -1680,6 +1798,16 @@ void skills_crossing() {
     wait(20); // let register
 }
 
+
+
+
+
+
+
+
+
+
+
 /**
  * Runs in driver control
  */
@@ -1694,9 +1822,9 @@ void opcontrol() {
     //                                                  // control zone in long goal)
     robot.color_sort = false; // enable color sorting for driver control
     pros::Task debug(print_pos); // TODO uncomment this
+    pros::Task log(logData); // log data
     // pros::Task debug(checkColorGaps);
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
-    pros::Task cross(dummy_func);
     while (true) {
         // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
@@ -1707,6 +1835,7 @@ void opcontrol() {
         intake.runIntake();
         unloader.toggleFire();
         descore.toggleFire();
+        middle_goal.toggleFire();
         score_toggle.toggleFire();
         // // delay to save resources
         intake.color_sort();

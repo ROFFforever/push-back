@@ -5,6 +5,9 @@ from matplotlib.patches import Rectangle
 from matplotlib.transforms import Affine2D
 from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Button
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.colors as mcolors
 import os
 import shutil
 import filecmp
@@ -34,20 +37,47 @@ def copy_to_archive():
 
 def load_and_calculate():
     print("Storing data into array...")
-    x, y, h = [], [], []
+    x, y, h, leftTemps, rightTemps, it1Temps, it2Temps = [], [], [], [], [], [], []
     if not os.path.exists(LOG_FILE): return None
     try:
         try:
             with open(LOG_FILE, 'r', encoding='utf-16') as f: lines = f.readlines()
         except:
             with open(LOG_FILE, 'r', encoding='utf-8') as f: lines = f.readlines()
-        
+        start_data = False
         for line in lines:
-            line = line.strip().replace('\ufeff', '').replace('X:', '').replace('Y:', '').replace('Heading:', '')
-            if not line: continue
-            parts = [float(p) for p in line.split(',')]
-            if len(parts) >= 3:
-                x.append(parts[0]); y.append(parts[1]); h.append(parts[2])
+            if not start_data: # wait until data starts
+                if "Data Start;" in line:
+                    start_data = True
+            if start_data:
+                if "Pos;" in line: #Parse for Pos lines
+                    line = line.strip().replace('\ufeff', '').replace('X:', '').replace('Y:', '').replace('Heading:', '').replace('Pos;', '')
+                    if not line: continue
+                    parts = [float(p) for p in line.split(',')]
+                    if len(parts) >= 3:
+                        x.append(parts[0]); y.append(parts[1]); h.append(parts[2])
+                elif "LT;" in line:
+                    line = line.strip().replace('LT;', '').replace('\ufeff', '')
+                    temps = [float(t) for t in line.split(',')]
+                    leftTemps.append(temps)
+                    print(f"Left Motor Temps: {temps}")
+                elif "RT;" in line:
+                    line = line.strip().replace('RT;', '').replace('\ufeff', '')
+                    temps = [float(t) for t in line.split(',')]
+                    rightTemps.append(temps)
+                    print(f"Right Motor Temps: {temps}")
+                elif "IT1;" in line:
+                    line = line.strip().replace('IT1;', '').replace('\ufeff', '')
+                    temp = float(line)
+                    it1Temps.append(temp)
+                    print(f"Intake Motor 1 Temp: {temp}")
+                elif "IT2;" in line:
+                    line = line.strip().replace('IT2;', '').replace('\ufeff', '')
+                    temp = float(line)
+                    it2Temps.append(temp)
+                    print(f"Intake Motor 2 Temp: {temp}")
+                    
+                
     except Exception as e:
         print(f"File Load Error: {e}")
         return None
@@ -57,12 +87,12 @@ def load_and_calculate():
     v = np.sqrt(np.gradient(x_arr, TIME_STEP)**2 + np.gradient(y_arr, TIME_STEP)**2)
     accel = np.gradient(v, TIME_STEP)
     copy_to_archive()
-    return x_arr, y_arr, h_arr, v, accel
+    return x_arr, y_arr, h_arr, v, accel, leftTemps, rightTemps, it1Temps, it2Temps
 
 data = load_and_calculate()
 if data:
-    x, y, h, v, accel = data
-    fig, ax = plt.subplots(figsize=(10, 9))
+    x, y, h, v, accel, leftTemps, rightTemps, it1Temps, it2Temps = data
+    fig, ax = plt.subplots(figsize=(12,12))
     plt.subplots_adjust(left=0.07, right=0.88, top=0.92, bottom=0.15)
     
     try:
@@ -79,6 +109,80 @@ if data:
     ghost_robot = Rectangle((-ROBOT_SIZE_IN/2, -ROBOT_SIZE_IN/2), ROBOT_SIZE_IN, ROBOT_SIZE_IN, alpha=0.5, color='orange', zorder=5)
     ax.add_patch(ghost_robot)
     ghost_robot.set_visible(False)
+    
+    #Motor temps
+    INIT_X, INIT_Y = -125, 30
+    temp_x, temp_y = INIT_X,INIT_Y
+    temp_min, temp_max, tempWarn, tempThresh, motorWidth, motorHeight = 25, 55, 50, 55, 8,28
+    for motors_temp in leftTemps:
+        ax.text(INIT_X-8, INIT_Y+motorHeight+5, "Left Motor Group C°", fontsize=12, color='black', weight="bold", zorder=11)
+        for motor_temp in motors_temp:
+            temp = motor_temp
+            if temp < tempWarn:
+                temp_color = "green"
+            elif temp < tempThresh:
+                temp_color = "orange"
+            elif temp >= tempThresh:
+                temp_color = "red"
+            motor_outline = patches.Rectangle((temp_x-1, temp_y-1), motorWidth+2, motorHeight+2, fill=False, edgecolor='black', linewidth=4, zorder=11)
+            ax.text(temp_x, temp_y+2, f'{temp}', fontsize=8, color='black', weight="bold", zorder=11)
+            motor_rect = patches.Rectangle((temp_x, temp_y), motorWidth, ((temp - temp_min) / (temp_max-temp_min)) * motorHeight, color=temp_color, zorder=10)
+            ax.add_patch(motor_rect)
+            ax.add_patch(motor_outline)
+            temp_x += motorWidth + 5
+    
+    temp_x, temp_y, group_gap = INIT_X,INIT_Y-motorHeight, 15
+    temp_y = temp_y - group_gap
+    
+    for motors_temp in rightTemps:
+        ax.text(INIT_X-8, INIT_Y-group_gap+5, "Right Motor Group C°", fontsize=12, color='black', weight="bold", zorder=11)
+        for motor_temp in motors_temp:
+            temp = motor_temp
+            if temp < tempWarn:
+                temp_color = "green"
+            elif temp < tempThresh:
+                temp_color = "orange"
+            elif temp >= tempThresh:
+                temp_color = "red"
+            motor_outline = patches.Rectangle((temp_x-1, temp_y -1), motorWidth+2, motorHeight+2, fill=False, edgecolor='black', linewidth=4, zorder=11)
+            ax.text(temp_x, temp_y+2, f'{temp}', fontsize=8, color='black', weight="bold", zorder=11)
+            motor_rect = patches.Rectangle((temp_x, temp_y), motorWidth, ((temp - temp_min) / (temp_max-temp_min)) * motorHeight, color=temp_color, zorder=10)
+            ax.add_patch(motor_rect)
+            ax.add_patch(motor_outline)
+            temp_x += motorWidth + 5
+       
+            
+    temp_x, temp_y = INIT_X,INIT_Y-motorHeight * 2 - 2 * group_gap
+    for motorTemp in it1Temps:
+        ax.text(INIT_X-8, temp_y+motorHeight+5, "Intake 1C°", fontsize=12, color='black', weight="bold", zorder=11)
+        temp = motor_temp
+        if temp < tempWarn:
+            temp_color = "green"
+        elif temp < tempThresh:
+            temp_color = "orange"
+        elif temp >= tempThresh:
+            temp_color = "red"
+        ax.text(temp_x, temp_y+2, f'{temp}', fontsize=8, color='black', weight="bold", zorder=11)
+        motor_rect = patches.Rectangle((temp_x, temp_y), motorWidth, ((temp - temp_min) / (temp_max-temp_min)) * motorHeight, color=temp_color, zorder=10)
+        motor_outline = patches.Rectangle((temp_x-1, temp_y), motorWidth+2, motorHeight+2, fill=False, edgecolor='black', linewidth=4, zorder=11)
+        ax.add_patch(motor_rect)
+        ax.add_patch(motor_outline)
+        temp_x += motorWidth + 15
+        
+    for motorTemp in it2Temps:
+        ax.text(temp_x, temp_y+motorHeight+5, "Intake 2C°", fontsize=12, color='black', weight="bold", zorder=11)
+        temp = motor_temp
+        if temp < tempWarn:
+            temp_color = "green"
+        elif temp < tempThresh:
+            temp_color = "orange"
+        elif temp >= tempThresh:
+            temp_color = "red"
+        ax.text(temp_x, temp_y+2, f'{temp}', fontsize=8, color='black', weight="bold", zorder=11)
+        motor_rect = patches.Rectangle((temp_x, temp_y), motorWidth, ((temp - temp_min) / (temp_max-temp_min)) * motorHeight, color=temp_color, zorder=10)
+        motor_outline = patches.Rectangle((temp_x-1, temp_y), motorWidth+2, motorHeight+2, fill=False, edgecolor='black', linewidth=4, zorder=11)
+        ax.add_patch(motor_rect)
+        ax.add_patch(motor_outline)
     
     timer_text = ax.text(0.95, 0.95, 'Time: 0.00s', transform=ax.transAxes, fontsize=12, fontweight='bold', color='white', bbox=dict(facecolor='black', alpha=0.5), ha='right')
 
@@ -162,7 +266,7 @@ if data:
         fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("pick_event", on_pick)
-    ax.set_xlim(-72, 72); ax.set_ylim(-72, 72)
+    ax.set_xlim(-140, 140); ax.set_ylim(-72, 72)
     ax.set_title("LemLib Playback Tool 2026", pad=10)
     plt.show()
 else:

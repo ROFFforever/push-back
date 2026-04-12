@@ -17,7 +17,7 @@ Established terminal connection
            "                Copyright (c) Purdue University ACM SIGBots
 Version:        4.2.1     Platform:  V1.1.5 (b18)     Uptime:    0.000 s
 Compiled:   Apr 12 2026 12:53:32     Directory:                        
-asdoighlsadglsakjdg
+
 
 Data Start;
 LT; 25.00,25.00,25.00
