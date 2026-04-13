@@ -94,10 +94,9 @@ pushback::Piston middle_goal(1, pros::E_CONTROLLER_DIGITAL_A);
 
 //distance sensors
 std::vector<pushback::Wall_Sen> distance_sensors = {
-    pushback::Wall_Sen(1,1,1, pushback::Wall_Sen::FRONT),
-    pushback::Wall_Sen(2,1,1, pushback::Wall_Sen::BACK),
-    pushback::Wall_Sen(3,1,1, pushback::Wall_Sen::LEFT),
-    pushback::Wall_Sen(4,1,1, pushback::Wall_Sen::RIGHT)
+    pushback::Wall_Sen(8,0.5,5.2, pushback::Wall_Sen::RIGHT),
+    pushback::Wall_Sen(7,2.5,3.5, pushback::Wall_Sen::BACK),
+    pushback::Wall_Sen(3,0.5,5.2, pushback::Wall_Sen::LEFT),
 };
 // create the chassis
 lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors, &throttleCurve, &steerCurve);
@@ -187,18 +186,21 @@ ASSET(elimRightTrio_txt);
 
 // debug task to print position to screen
 void print_pos() {
+    float distance = robot.get_dist_from_wall(&distance_sensors[0]); //just test right for now
     while (true) {
         const auto pos = chassis.getPose();
-        intake.color_sort();
-
+        distance = robot.get_dist_from_wall(&distance_sensors[0]); //just test right for now
         char buf1[48], buf2[48], buf3[48], buf7[48];
         std::snprintf(buf1, sizeof(buf1), "X: %.3f", pos.x);
         std::snprintf(buf2, sizeof(buf2), "Y: %.3f", pos.y);
         std::snprintf(buf3, sizeof(buf3), "Theta: %.3f", pos.theta);
+        std::snprintf(buf7, sizeof(buf7), "Center to wall: %.3f", distance);
+
 
         pros::screen::print(pros::E_TEXT_MEDIUM, 1, buf1);
         pros::screen::print(pros::E_TEXT_MEDIUM, 2, buf2);
         pros::screen::print(pros::E_TEXT_MEDIUM, 3, buf3);
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, buf7);
 
 
         pros::delay(50);
@@ -224,6 +226,8 @@ void checkColorGaps() {
 //LT = left motor temps
 //RT = right motor temps
 void logData() {
+    float distance = robot.get_dist_from_wall(&distance_sensors[0]); //just test right for now
+
     //mark the start of data stream
     printf("Data Start;\n");
     std::vector<double> leftTemps = leftMotors.get_temperature_all();
@@ -235,8 +239,8 @@ void logData() {
     printf("IT2; %.2f\n", intake_2.get_temperature());
     while (true) {
         lemlib::Pose pos = chassis.getPose();
-
-        printf("Pos; %.2f,%.2f,%.2f\n", pos.x, pos.y, pos.theta);
+        distance = robot.get_dist_from_wall(&distance_sensors[0]); //just test right for now    
+        printf("Pos; %.2f,%.2f,%.2f\n", pos.x, 70-distance, pos.theta);
         pros::delay(50);
     }
 }
@@ -721,6 +725,7 @@ bool upLastClicked = false;
 bool upClicked = false;
 
 void opcontrol() {
+    chassis.setPose(40, 0, 270);
     // // robot.color_sort = true; // enable color sorting for now
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST); // make sure not braked from previous auton(could be braked holding
     //                                                  // control zone in long goal)

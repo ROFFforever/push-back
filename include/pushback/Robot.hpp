@@ -19,7 +19,13 @@ class Robot {
               pushback::Piston* piston3, pushback::Piston* piston4,std::vector<pushback::Wall_Sen> distance_sensors, pros::Imu* imu,
               pros::Controller& controller, pros::Optical* optical, int color);
 
-
+        /**
+         * @brief Given sensor direction, return the corresponding sensor
+         * 
+         * @param TYPE 
+         * @return Wall_Sen* 
+         */
+        Wall_Sen* find_sensor(int const TYPE);
         /**
          * @brief Get the side object
          * 

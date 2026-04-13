@@ -2,108 +2,75 @@
 #include "lemlib/chassis/chassis.hpp"
 
 namespace pushback {
+
+pushback::Wall_Sen* Robot::find_sensor(int const TYPE) {
+    for (pushback::Wall_Sen& s : distance_sensors) {
+        if (s.TYPE == TYPE) { return &s; }
+    }
+    return nullptr;
+}
+
 // We are using "VEX Gaming Positioning System" for these calculations
 lemlib::Pose Robot::reset_y() {
+    // wall sensor that will be used to reset
     pushback::Wall_Sen* sen = nullptr;
+
+    // current robot position
     float x = chassis.getPose().x;
     float y = chassis.getPose().y;
-    float globalTheta = chassis.getPose().theta; // I think it's in radians
+    float globalTheta = chassis.getPose().theta; // In degrees
+
+    // Which "SIDE" robot facing where 0 degrees corresponds to FRONT(using VGP system)
     const int side = get_side(globalTheta);
     bool negativeY = false;
 
     // find the correct sensor to use to reset
     if ((side == pushback::Wall_Sen::FRONT)) { // if it's facing forward
-        if (y < 0) { //and y is negative, use the back sensor 
+        if (y < 0) { // and y is negative, use the back sensor
             negativeY = true;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::BACK) {
-                    sen = &s;
-                    break;
-                }
-            }
-        }
-        else{ //if y>0 make sense to use front sensor
+            sen = find_sensor(Wall_Sen::BACK);
+        } else { // if y>0 make sense to use front sensor
             negativeY = false;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::FRONT) {
-                    sen = &s;
-                    break;
-                }
-            }
+            sen = find_sensor(Wall_Sen::FRONT);
         }
-    } 
-
+    }
     else if ((side == pushback::Wall_Sen::RIGHT)) { // if it's facing right
-        if (y < 0) { //and y is negative, use the back sensor 
+        if (y < 0) { // and y is negative, use the back sensor
             negativeY = true;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::RIGHT) {
-                    sen = &s;
-                    break;
-                }
-            }
-        }
-        else{ //if y>0 make sense to use left sensor
+            sen = find_sensor(Wall_Sen::RIGHT);
+        } else { // if y>0 make sense to use left sensor
             negativeY = false;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::LEFT) {
-                    sen = &s;
-                    break;
-                }
-            }
+            sen = find_sensor(Wall_Sen::LEFT);
         }
     }
-
     else if ((side == pushback::Wall_Sen::BACK)) { // if it's facing right
-        if (y < 0) { //and y is negative, use the front sensor 
+        if (y < 0) { // and y is negative, use the front sensor
             negativeY = true;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::FRONT) {
-                    sen = &s;
-                    break;
-                }
-            }
-        }
-        else{ //if y>0 make sense to use back sensor
+            sen = find_sensor(Wall_Sen::FRONT);
+        } else { // if y>0 make sense to use back sensor
             negativeY = false;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::BACK) {
-                    sen = &s;
-                    break;
-                }
-            }
+            sen = find_sensor(Wall_Sen::BACK);
         }
-    }
-    else if ((side == pushback::Wall_Sen::LEFT)) { // if it's facing right
-        if (y < 0) { //and y is negative, use the left sensor 
+    } else if ((side == pushback::Wall_Sen::LEFT)) { // if it's facing left
+        if (y < 0) { // and y is negative, use the left sensor
             negativeY = true;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::LEFT) {
-                    sen = &s;
-                    break;
-                }
-            }
-        }
-        else{ //if y>0 make sense to use right sensor
+            sen = find_sensor(Wall_Sen::LEFT);
+        } else { // if y>0 make sense to use right sensor
             negativeY = false;
-            for (pushback::Wall_Sen& s : distance_sensors) {
-                if (s.TYPE == pushback::Wall_Sen::RIGHT) {
-                    sen = &s;
-                    break;
-                }
-            }
+            sen = find_sensor(Wall_Sen::RIGHT);
         }
     }
 
-    if(sen == nullptr){
-        return lemlib::Pose(-1,-1,-1); // if no sensor was found, return ERROR pose
-    }
+    // if can't find any sensor to use, return ERROR pose
+    if (sen == nullptr) { return lemlib::Pose(-1, -1, -1); }
 
+    // get dist from wall accounting for offsets and robot orientation
     float dist_from_wall = get_dist_from_wall(sen);
 
-    if(negativeY){
+    // if in negative quadrant subtract 70 to make negative
+    if (negativeY) {
         return lemlib::Pose(x, dist_from_wall - 70, globalTheta);
-    }else{
+    } else {
         return lemlib::Pose(x, 70 - dist_from_wall, globalTheta);
     }
 }
@@ -133,15 +100,14 @@ int Robot::get_side(float angle) {
 }
 
 float Robot::get_dist_from_wall(pushback::Wall_Sen* sen) {
-    float globalTheta = chassis.getPose().theta; // I think it's in radians
+    float globalTheta = chassis.getPose().theta; // In degrees
     float dist = sen->get_dist();
     float localTheta = std::fmod(std::fmod(globalTheta + 45.0f, 90.0f) + 90.0f, 90.0f) -
                        45.0f; // add 45 in the beginning to account for negative values
     localTheta = localTheta * (std::numbers::pi_v<float> / 180.0f);
     return (dist + sen->vert_offset) * std::cos(localTheta) +
-                           (sen->horiz_offset * std::sin(localTheta)); // get dist from center or robot to wall
+           (sen->horiz_offset * std::sin(localTheta)); // get dist from center or robot to wall
 }
-
 
 void Robot::jiggle(float magnitude, int cycle_time, int time) {
     int elapsed_time = 0;
