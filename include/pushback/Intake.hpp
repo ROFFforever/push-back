@@ -18,6 +18,8 @@ namespace pushback {
 
 class Intake {
     public:
+
+        void intake_weak();
         /**
          * @brief Function responsible for mapping controller inputs to intake motions
          * @attention Must run every loop of main opcontrol loop
@@ -78,6 +80,11 @@ class Intake {
          * @brief outakes the intake
          */
         void outake();
+        /**
+         * @brief outake weak for low goal
+         * 
+         */
+        void outake_weak();
         /**
          * @brief Checks if intake is jammed, if so initiates outaking
          * @attention Meant to be run in a loop

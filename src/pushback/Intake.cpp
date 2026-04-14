@@ -64,6 +64,16 @@ void Intake::intake() {
     robot.intake_2->move_voltage(-12000);
     robot.intake_3->move_voltage(12000);
 }
+void Intake::intake_weak() {
+    robot.intake_1->move_voltage(8000);
+    robot.intake_2->move_voltage(-8000);
+    robot.intake_3->move_voltage(8000);
+}
+void Intake::outake_weak() {
+    robot.intake_1->move_voltage(-6000);
+    robot.intake_3->move_voltage(-6000);
+    robot.intake_2->move_voltage(6000);
+}
 
 void Intake::stop() {
     robot.intake_2->move_voltage(0);

@@ -11,7 +11,7 @@ pushback::Wall_Sen* Robot::find_sensor(int const TYPE) {
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
-lemlib::Pose Robot::reset_y() {
+bool Robot::reset_y() {
     // wall sensor that will be used to reset
     pushback::Wall_Sen* sen = nullptr;
 
@@ -62,16 +62,85 @@ lemlib::Pose Robot::reset_y() {
     }
 
     // if can't find any sensor to use, return ERROR pose
-    if (sen == nullptr) { return lemlib::Pose(-1, -1, -1); }
+    if (sen == nullptr) { return false; } //no sensor found
 
     // get dist from wall accounting for offsets and robot orientation
     float dist_from_wall = get_dist_from_wall(sen);
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeY) {
-        return lemlib::Pose(x, dist_from_wall - 70, globalTheta);
+        chassis.setPose(x, dist_from_wall - 70, globalTheta);
     } else {
-        return lemlib::Pose(x, 70 - dist_from_wall, globalTheta);
+        chassis.setPose(x, 70 - dist_from_wall, globalTheta);
+    }
+
+    return true; //position sucessfully reset
+}
+
+// We are using "VEX Gaming Positioning System" for these calculations
+bool Robot::reset_x() {
+    // wall sensor that will be used to reset
+    pushback::Wall_Sen* sen = nullptr;
+
+    // current robot position
+    float x = chassis.getPose().x;
+    float y = chassis.getPose().y;
+    float globalTheta = chassis.getPose().theta; // In degrees
+
+    // Which "SIDE" robot facing where 0 degrees corresponds to FRONT(using VGP system)
+    const int side = get_side(globalTheta);
+    bool negativeX = false;
+
+    // find the correct sensor to use to reset
+    if ((side == pushback::Wall_Sen::FRONT)) { // if it's facing forward
+        if (x < 0) { // and x is negative, use the left sensor
+            negativeX = true;
+            sen = find_sensor(Wall_Sen::LEFT);
+        } else { // if x>0 make sense to use right sensor
+            negativeX = false;
+            sen = find_sensor(Wall_Sen::RIGHT);
+        }
+    }
+    else if ((side == pushback::Wall_Sen::RIGHT)) { // if it's facing right
+        if (x < 0) { // and x is negative, use the back sensor
+            negativeX = true;
+            sen = find_sensor(Wall_Sen::BACK);
+        } else { // if x>0 make sense to use left sensor
+            negativeX = false;
+            sen = find_sensor(Wall_Sen::FRONT);
+        }
+    }
+    else if ((side == pushback::Wall_Sen::BACK)) { // if it's facing back
+        if (x < 0) { // and x is negative, use the right sensor
+            negativeX = true;
+            sen = find_sensor(Wall_Sen::RIGHT);
+        } else { // if x>0 make sense to use left sensor
+            negativeX = false;
+            sen = find_sensor(Wall_Sen::LEFT);
+        }
+    } else if ((side == pushback::Wall_Sen::LEFT)) { // if it's facing left
+        if (x < 0) { // and x is negative, use the front sensor
+            negativeX = true;
+            sen = find_sensor(Wall_Sen::FRONT);
+        } else { // if x>0 make sense to use back sensor
+            negativeX = false;
+            sen = find_sensor(Wall_Sen::BACK);
+        }
+    }
+
+    // if can't find any sensor to use, return ERROR pose
+    if (sen == nullptr) { return false; } // couldn't find sensor just dont reset
+
+    // get dist from wall accounting for offsets and robot orientation
+    float dist_from_wall = get_dist_from_wall(sen);
+
+    // if in negative quadrant subtract 70 to make negative
+    if (negativeX) {
+        chassis.setPose(dist_from_wall - 70, y, globalTheta);
+        return true;
+    } else {
+        chassis.setPose(70-dist_from_wall, y, globalTheta);
+        return true;
     }
 }
 
@@ -87,13 +156,13 @@ int Robot::get_side(float angle) {
     index %= 4;
 
     if (index == 0) {
-        return pushback::Wall_Sen::FRONT;
+        return pushback::Wall_Sen::FRONT; //if within (-45,45) basically facing 0 degrees
     } else if (index == 1) {
-        return pushback::Wall_Sen::RIGHT;
+        return pushback::Wall_Sen::RIGHT; //if within (45, 135) basically facing 90 degrees
     } else if (index == 2) {
-        return pushback::Wall_Sen::BACK;
+        return pushback::Wall_Sen::BACK; //if within (135, 225) basically facing 180 degrees
     } else if (index == 3) {
-        return pushback::Wall_Sen::LEFT;
+        return pushback::Wall_Sen::LEFT; //if within (225, 315) basically facing 270 degrees
     } else {
         return -1; // shouldn't be possible
     }

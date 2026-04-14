@@ -41,14 +41,15 @@ class Robot {
         float get_dist_from_wall(pushback::Wall_Sen* sen);
         /**
          * @brief Reset robot X position using wall sensors
+         * @return true if reset was successful, false if not (if no appropriate sensor was found)
          * 
          */
-        lemlib::Pose reset_x();
+        bool reset_x();
            /**
          * @brief Reset robot Y position using wall sensors
-         * 
+         * @return true if reset was successful, false if not (if no appropriate sensor was found)
          */
-        lemlib::Pose reset_y();
+        bool reset_y();
         /**
          * @brief move the robot forward and backward
          *  @param magnitude speed from 0 to 127
