@@ -85,6 +85,11 @@ class Intake {
          * 
          */
         void outake_weak();
+    /**
+     * @brief outake for last balls in low goal for skills
+     * 
+     */
+        void outake_super_weak();
         /**
          * @brief Checks if intake is jammed, if so initiates outaking
          * @attention Meant to be run in a loop
