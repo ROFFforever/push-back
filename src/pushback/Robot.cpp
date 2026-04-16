@@ -96,12 +96,15 @@ bool Robot::reset_y(bool async, bool check_relative) {
     //check if too far from current position
     if(check_relative){ //check if setting enabled
         float error = fabs(new_y - y);
-        if(error > 10){ //pretty off
+        if(error > 8){ //pretty off
             return false;
         }
     }
-
-    return true; //position sucessfully reset
+    //set position
+    chassis.setPose(chassis.getPose().x, new_y, chassis.getPose().theta);
+    
+    //position sucessfully reset
+    return true; 
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
@@ -193,10 +196,12 @@ bool Robot::reset_x(bool async, bool check_relative) {
             return false;
         }
     }
-    
+
+    //set position
+    chassis.setPose(new_x, chassis.getPose().y , chassis.getPose().theta);
+
     //passed all tests
     return true;
-
 }
 
 int Robot::get_side(float angle) {
