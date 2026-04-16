@@ -11,7 +11,15 @@ pushback::Wall_Sen* Robot::find_sensor(int const TYPE) {
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
-bool Robot::reset_y() {
+bool Robot::reset_y(bool async, bool check_relative) {
+    //run async if possible
+    if (async) {
+        pros::Task([this]() {
+            this->reset_x(false);
+        });
+        return false;
+    }
+
     // wall sensor that will be used to reset
     pushback::Wall_Sen* sen = nullptr;
 
@@ -19,6 +27,7 @@ bool Robot::reset_y() {
     float x = chassis.getPose().x;
     float y = chassis.getPose().y;
     float globalTheta = chassis.getPose().theta; // In degrees
+    float new_y = y;
 
     // Which "SIDE" robot facing where 0 degrees corresponds to FRONT(using VGP system)
     const int side = get_side(globalTheta);
@@ -64,21 +73,46 @@ bool Robot::reset_y() {
     // if can't find any sensor to use, return ERROR pose
     if (sen == nullptr) { return false; } //no sensor found
 
-    // get dist from wall accounting for offsets and robot orientation
-    float dist_from_wall = get_dist_from_wall(sen);
+     //find median val
+    float vals[3];
+
+    for (int i = 0; i < 3; i++) {
+        float d = get_dist_from_wall(sen);
+        if (d == -1) return false;
+        vals[i] = d;
+        pros::delay(10);
+    }
+    //sort from lowest to highest
+    std::sort(vals, vals + 3);
+    float dist = vals[1]; // median
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeY) {
-        chassis.setPose(x, dist_from_wall - 70, globalTheta);
+        y = dist - 70;
     } else {
-        chassis.setPose(x, 70 - dist_from_wall, globalTheta);
+        y = 70 - dist;
+    }
+
+    //check if too far from current position
+    if(check_relative){ //check if setting enabled
+        float error = fabs(new_y - y);
+        if(error > 10){ //pretty off
+            return false;
+        }
     }
 
     return true; //position sucessfully reset
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
-bool Robot::reset_x() {
+bool Robot::reset_x(bool async, bool check_relative) {
+    //run async if possible
+    if (async) {
+        pros::Task([this]() {
+            this->reset_x(false);
+        });
+        return false;
+    }
     // wall sensor that will be used to reset
     pushback::Wall_Sen* sen = nullptr;
 
@@ -86,6 +120,7 @@ bool Robot::reset_x() {
     float x = chassis.getPose().x;
     float y = chassis.getPose().y;
     float globalTheta = chassis.getPose().theta; // In degrees
+    float new_x = x;
 
     // Which "SIDE" robot facing where 0 degrees corresponds to FRONT(using VGP system)
     const int side = get_side(globalTheta);
@@ -131,17 +166,37 @@ bool Robot::reset_x() {
     // if can't find any sensor to use, return ERROR pose
     if (sen == nullptr) { return false; } // couldn't find sensor just dont reset
 
-    // get dist from wall accounting for offsets and robot orientation
-    float dist_from_wall = get_dist_from_wall(sen);
+    //find median val
+    float vals[3];
+
+    for (int i = 0; i < 3; i++) {
+        float d = get_dist_from_wall(sen);
+        if (d == -1) return false;
+        vals[i] = d;
+        pros::delay(10);
+    }
+    //sort lowest to highest
+    std::sort(vals, vals + 3);
+    float dist = vals[1]; // median
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeX) {
-        chassis.setPose(dist_from_wall - 70, y, globalTheta);
-        return true;
+        new_x = dist-70;
     } else {
-        chassis.setPose(70-dist_from_wall, y, globalTheta);
-        return true;
+        new_x = 70-dist;
     }
+
+    //check if too far from current position
+    if(check_relative){ //check if setting enabled
+        float error = fabs(new_x - x);
+        if(error > 10){ //pretty off
+            return false;
+        }
+    }
+    
+    //passed all tests
+    return true;
+
 }
 
 int Robot::get_side(float angle) {
@@ -171,6 +226,9 @@ int Robot::get_side(float angle) {
 float Robot::get_dist_from_wall(pushback::Wall_Sen* sen) {
     float globalTheta = chassis.getPose().theta; // In degrees
     float dist = sen->get_dist();
+    if(dist == PROS_ERR){ //ERROR VAL
+        return -1; //error val
+    }
     float localTheta = std::fmod(std::fmod(globalTheta + 45.0f, 90.0f) + 90.0f, 90.0f) -
                        45.0f; // add 45 in the beginning to account for negative values
     localTheta = localTheta * (std::numbers::pi_v<float> / 180.0f);

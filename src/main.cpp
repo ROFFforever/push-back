@@ -695,8 +695,8 @@ void skillspt4(){
     unloader.firePiston(false);
     chassis.moveToPoint(-42, -57.5, 1850, {.forwards=false}, true);
     wait(300);
-      reset_x();
-      wait(600);
+    reset_x();
+    wait(600);
     reset_y();
     chassis.waitUntilDone();
     descore.firePiston(false);
