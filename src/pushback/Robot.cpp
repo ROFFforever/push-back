@@ -88,9 +88,9 @@ bool Robot::reset_y(bool async, bool check_relative) {
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeY) {
-        y = dist - 70;
+        new_y = dist - 70;
     } else {
-        y = 70 - dist;
+        new_y = 70 - dist;
     }
 
     //check if too far from current position
