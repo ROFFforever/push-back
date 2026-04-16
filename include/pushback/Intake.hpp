@@ -18,12 +18,13 @@ namespace pushback {
 
 class Intake {
     public:
-
+   void intake_weak_super();
         void intake_weak();
         /**
          * @brief Function responsible for mapping controller inputs to intake motions
          * @attention Must run every loop of main opcontrol loop
          */
+        
         void runIntake();
         /**
          * @brief Constructor for Intake
