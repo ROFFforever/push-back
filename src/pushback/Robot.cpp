@@ -15,7 +15,7 @@ bool Robot::reset_y(bool async, bool check_relative) {
     //run async if possible
     if (async) {
         pros::Task([this]() {
-            this->reset_x(false);
+            this->reset_y(false);
         });
         return false;
     }
