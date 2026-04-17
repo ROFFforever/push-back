@@ -44,12 +44,12 @@ class Robot {
          * @return true if reset was successful, false if not (if no appropriate sensor was found)
          * 
          */
-        bool reset_x(bool async = true, bool check_relative=true);
+        bool reset_x(bool async = false, bool check_relative=true, bool poll = false);
            /**
          * @brief Reset robot Y position using wall sensors
          * @return true if reset was successful, false if not (if no appropriate sensor was found)
          */
-        bool reset_y(bool async = true, bool check_relative=true);
+        bool reset_y(bool async = false, bool check_relative=true, bool poll = false);
         /**
          * @brief move the robot forward and backward
          *  @param magnitude speed from 0 to 127

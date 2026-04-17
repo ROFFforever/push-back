@@ -11,7 +11,7 @@ pushback::Wall_Sen* Robot::find_sensor(int const TYPE) {
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
-bool Robot::reset_y(bool async, bool check_relative) {
+bool Robot::reset_y(bool async, bool check_relative, bool poll) {
     //run async if possible
     if (async) {
         pros::Task([this]() {
@@ -73,7 +73,10 @@ bool Robot::reset_y(bool async, bool check_relative) {
     // if can't find any sensor to use, return ERROR pose
     if (sen == nullptr) { return false; } //no sensor found
 
-     //find median val
+    float dist = 0;
+
+    if(poll){
+    //find median val
     float vals[3];
 
     for (int i = 0; i < 3; i++) {
@@ -82,9 +85,12 @@ bool Robot::reset_y(bool async, bool check_relative) {
         vals[i] = d;
         pros::delay(10);
     }
-    //sort from lowest to highest
+    //sort lowest to highest
     std::sort(vals, vals + 3);
-    float dist = vals[1]; // median
+    dist = vals[1]; // median
+    }else{
+        dist = get_dist_from_wall(sen);
+    }
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeY) {
@@ -108,7 +114,7 @@ bool Robot::reset_y(bool async, bool check_relative) {
 }
 
 // We are using "VEX Gaming Positioning System" for these calculations
-bool Robot::reset_x(bool async, bool check_relative) {
+bool Robot::reset_x(bool async, bool check_relative, bool poll) {
     //run async if possible
     if (async) {
         pros::Task([this]() {
@@ -169,6 +175,9 @@ bool Robot::reset_x(bool async, bool check_relative) {
     // if can't find any sensor to use, return ERROR pose
     if (sen == nullptr) { return false; } // couldn't find sensor just dont reset
 
+    float dist = 0;
+
+    if(poll){
     //find median val
     float vals[3];
 
@@ -180,7 +189,10 @@ bool Robot::reset_x(bool async, bool check_relative) {
     }
     //sort lowest to highest
     std::sort(vals, vals + 3);
-    float dist = vals[1]; // median
+    dist = vals[1]; // median
+    }else{
+        dist = get_dist_from_wall(sen);
+    }
 
     // if in negative quadrant subtract 70 to make negative
     if (negativeX) {
