@@ -940,7 +940,7 @@ void awp() {
     chassis.setPose(start_pose);
     intake.intake();
     robot.ram(95, 400); //move partner and get ball
-    chassis.moveToPoint(-48, -40.5, 1200, {.forwards=false, .minSpeed=1, .earlyExitRange=1}, true);
+    chassis.moveToPoint(-48, -43, 1300, {.forwards=false}, true);
     wait(500);
     unloader.firePiston(true);
     reset_x();
@@ -948,8 +948,7 @@ void awp() {
       printf("finished motion\n");
     chassis.turnToHeading(270, 500, {}, false);
     reset_y();
-    robot.ram(90, 100);
-    chassis.moveToPoint(-70, -46.5, 800, {.maxSpeed=80}, false);
+    robot.ram(75, 800); //get matchloaders
     reset_y();
     chassis.moveToPose(-30, -46.8, 270, 1200, {.forwards = false, .lead = 0.2, .minSpeed = 80, .earlyExitRange = 1},
                        true); // go back into goal
@@ -969,10 +968,11 @@ void awp() {
     reset_y();
 
     // #2
-    leftMotors.move_voltage(7000);
+    leftMotors.move_voltage(7500);
     rightMotors.move_voltage(-3500);
     float theta = chassis.getPose().theta;
-    while(theta < 10){
+    lemlib::Timer maxTime(1000);
+    while((theta < 10) && (!maxTime.isDone())){
     theta = chassis.getPose().theta;
     wait(10);
     }
@@ -1009,17 +1009,17 @@ void awp() {
     leftMotors.move_voltage(0);
      rightMotors.move_voltage(0);
      chassis.moveToPoint(-50, 46.7, 1200, {.minSpeed=50, .earlyExitRange=0.4}, true); //go to matchloader
-        score_toggle.firePiston(false); // close scoring hood
      intake.outake();
-     wait(60);
-          unloader.firePiston(true);
+     wait(100);
      intake.stop();
+     wait(100);
+        score_toggle.firePiston(false); // close scoring hood
+          unloader.firePiston(true);
      wait(240);
      reset_y();
      chassis.waitUntilDone();
      intake.intake();
-    robot.ram(85, 280); //get matchloader balls
-    robot.ram(80, 600); //get matchloader balls
+    robot.ram(75, 700); //get matchloader balls
     moveStraight(-8, 600, {.minSpeed=1, .earlyExitRange=1}, false);
     chassis.turnToHeading(285, 300, {}, false);
     chassis.moveToPoint(-13,13, 1500, {.forwards=false, .minSpeed=60, .earlyExitRange=1}, true); 
@@ -1034,6 +1034,91 @@ void awp() {
     printf("Done with Auton: %.f \n", (float) timer.getTimePassed());
     af();
    
+}
+void firstTrioArc(){
+    chassis.setPose(-47, -13.5, 90);
+    robot.reset_x(false, false, true);
+    robot.reset_y(false, false, true);
+    intake.intake();
+    leftMotors.move_voltage(11000);
+    rightMotors.move_voltage(5200);
+    wait(430);
+    unloader.firePiston(true);
+
+        leftMotors.move_voltage(11000);
+    rightMotors.move_voltage(-2000);
+    while(chassis.getPose().theta < 185){
+        wait(15);
+    }
+    int wait_time = 555;
+     leftMotors.move_voltage(7500);
+    rightMotors.move_voltage(11500);
+    wait(wait_time);
+
+    chassis.swingToHeading(273, DriveSide::RIGHT, 500, {.maxSpeed=110, .minSpeed=1, .earlyExitRange=2}, false);
+    while(chassis.getPose().theta < 270) wait(15);
+    reset_y();
+    reset_x();
+
+
+    //brake motors
+        leftMotors.move_voltage(-1500);
+    rightMotors.move_voltage(-1500);
+    wait(150);
+leftMotors.move_voltage(-100);
+    rightMotors.move_voltage(-100);
+
+
+
+    chassis.moveToPose(-70, -46.8, 270, 1400, {.lead=0.28, .maxSpeed=80, .minSpeed=50, .earlyExitRange=1}, true);
+    lemlib::Timer count(150000);
+    while((chassis.getPose().x > -48)){
+        if(count.getTimePassed() > 150) reset_y();
+        wait(10);
+    }
+
+    chassis.cancelMotion();
+    printf("CANCELLED MOVETOPOSE\n");
+    robot.ram(55, 400);
+    robot.ram(70, 350);
+
+    chassis.moveToPose(-32, -47, 270, 1500, {.forwards=false, .lead=0.3, .minSpeed=10, .earlyExitRange=1}, true);
+    reset_y();
+    chassis.waitUntilDone();
+
+    robot.ram(-115, 150); //allign with long goal
+    score_toggle.firePiston(true);
+    unloader.firePiston(false);
+    robot.ram(-70, 900); //give time score balls
+
+    //swing out of goal and push
+    leftMotors.move_voltage(-3500);
+    rightMotors.move_voltage(8000);
+    lemlib::Timer maxTime(1000);
+    while((chassis.getPose().theta > 222) && (!maxTime.isDone())){
+    wait(10);
+    }
+    score_toggle.firePiston(false); // close scoring hood
+    printf("DONE TURNING \n");
+    rightMotors.move_voltage(0);
+    leftMotors.move_voltage(0);
+    chassis.turnToHeading(268, 600, {.minSpeed=10, .earlyExitRange=1}, false);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    lemlib::Timer waitForReset(100000);
+    while(chassis.getPose().x < -15){
+        leftMotors.move_voltage(-6000);
+        rightMotors.move_voltage(-6000);
+        if(waitForReset.getTimePassed() > 300) reset_x();
+    }
+    reset_x();
+    leftMotors.move_voltage(-800);
+    rightMotors.move_voltage(-800);
+    
+    
+
+}
+void sevenBall(){
+    firstTrioArc();
 }
 
 
@@ -1050,8 +1135,11 @@ void driveOneINch() { moveStraight(5, 250, {}, false); }
  */
 void autonomous() {
     pros::Task log(logData); // log data
-    skills_119();
-    //awp();
+    // skills_119();
+    // awp();
+    sevenBall();
+
+   
 }
 
 
@@ -1075,9 +1163,6 @@ bool upLastClicked = false;
 bool upClicked = false;
 
 void opcontrol() {
-    pros::Task log(logData); // log data
-    skills_119();
-    wait(1000000);
 
 
 
@@ -1087,7 +1172,7 @@ void opcontrol() {
     //                                                  // control zone in long goal)
     robot.color_sort = false; // enable color sorting for driver control
     pros::Task debug(print_pos); // TODO uncomment this
-    //pros::Task log(logData); // log data
+    pros::Task log(logData); // log data
     // pros::Task debug(checkColorGaps);
     robot.optical->set_led_pwm(100); // turn on optical sensor led for driver control
     while (true) {
