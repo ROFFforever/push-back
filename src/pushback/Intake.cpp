@@ -17,10 +17,10 @@ Intake::Intake(Robot& robot)
 void Intake::runIntake() {
     if (!inMotion) {
         if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) { // mid goal
-            robot.intake_1->move_voltage(12000);
-            robot.intake_2->move_voltage(-12000);
-            robot.intake_3->move_voltage(-12000);
-            robot.piston_4->firePiston(true);
+robot.intake_1->move_voltage(7500);
+    robot.intake_2->move_voltage(-7500);
+    robot.intake_3->move_voltage(8000);
+            robot.piston_4->firePiston(false);
             //4000 for midle goal in skills
             //9000 for regular matches
             opcontrol_intake = true; // opcontrol intake is currently running
@@ -28,22 +28,22 @@ void Intake::runIntake() {
             robot.intake_1->move_voltage(-12000);
             robot.intake_3->move_voltage(-12000);
             robot.intake_2->move_voltage(12000);
-            robot.piston_4->firePiston(false);
+            robot.piston_4->firePiston(true);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) { // intake
             robot.intake_1->move_voltage(12000);
             robot.intake_2->move_voltage(-12000);
             robot.intake_3->move_voltage(12000);
-            robot.piston_4->firePiston(false);
+            robot.piston_4->firePiston(true);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else if (robot.controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // weaker outake
                 robot.intake_1->move_voltage(-8000);
             robot.intake_3->move_voltage(-8000);
             robot.intake_2->move_voltage(8000);
-            robot.piston_4->firePiston(false);
+            robot.piston_4->firePiston(true);
             opcontrol_intake = true; // opcontrol intake is currently running
         } else {
-            robot.piston_4->firePiston(false);
+            robot.piston_4->firePiston(true);
             robot.intake_2->move_voltage(0);
             robot.intake_1->move_voltage(0);
             robot.intake_3->move_voltage(0);
@@ -65,8 +65,13 @@ void Intake::intake() {
     robot.intake_3->move_voltage(12000);
 }
 void Intake::intake_weak() {
-    robot.intake_1->move_voltage(7000);
-    robot.intake_2->move_voltage(-7000);
+    robot.intake_1->move_voltage(7500);
+    robot.intake_2->move_voltage(-7500);
+    robot.intake_3->move_voltage(8000);
+}
+void Intake::weak_kinda(){
+    robot.intake_1->move_voltage(10000);
+    robot.intake_2->move_voltage(-10000);
     robot.intake_3->move_voltage(8000);
 }
 void Intake::intake_weak_super() {

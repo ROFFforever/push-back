@@ -20,6 +20,30 @@ class Robot {
               pros::Controller& controller, pros::Optical* optical, int color);
 
         /**
+         * @brief Returns true if detecting color opposite of one's own(if ur blue, it will look for red)
+         * 
+         * @return true if detect color opposite of one's color
+         * @return false if doesn't detect opposite of one's color
+         */
+        bool detectOpposingColor();
+
+        /**
+         * @brief returns opposite color inputted
+         * 
+         * @param init_color: color you want to get opposite of
+         * @return The opposite color(constant in Robot class)
+         */
+        static int oppositeColor(int init_color);
+
+        /**
+         * @brief 
+         * 
+         * @param COLOR: use either enums from pushback::Robot::BLUE or RED
+         * @return true if it detects that color
+         * @return false if it doesn't detect that color
+         */
+        bool detectedColor(int COLOR);
+        /**
          * @brief Given sensor direction, return the corresponding sensor
          * 
          * @param TYPE 
@@ -77,6 +101,12 @@ class Robot {
         pros::Controller& controller;
         pros::Optical* optical;
         int color; //0 = blue, 1 = red
+        const static int BLUE = 0;
+        const static int RED = 1;
+        const static int BLUE_LOW = 218;
+        const static int RED_LOW = 340;
+        const static int BLUE_HIGH = 248;
+        const static int RED_HIGH = 357;
         bool color_sort; //whether to color sort or not
 };
 } // namespace pushback

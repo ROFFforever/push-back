@@ -277,6 +277,52 @@ void Robot::ram(int magnitude, int time) {
     chassis.arcade(0, 0);
 }
 
+bool Robot::detectOpposingColor(){
+    optical->set_led_pwm(100); //so we can see
+    if(color == BLUE){ //then look for red
+        int hue = optical->get_hue();
+        if((hue >= RED_LOW) && (hue <= RED_HIGH)){
+            return true;
+        }else{
+            return false;
+        }
+    }else{
+        int hue = optical->get_hue();
+        if((hue >= BLUE_LOW) && (hue <= BLUE_HIGH)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+bool Robot::detectedColor(int COLOR){
+    optical->set_led_pwm(100); //so we can see
+    if(COLOR == BLUE){ //then look for red
+        int hue = optical->get_hue();
+        if((hue >= BLUE_LOW) && (hue <= BLUE_HIGH)){
+            return true;
+        }else{
+            return false;
+        }
+    }else{
+        int hue = optical->get_hue();
+        if((hue >= RED_LOW) && (hue <= RED_HIGH)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+ int Robot::oppositeColor(int init_color){
+    if(init_color == BLUE){
+        return RED;
+    }else{
+        return BLUE;
+    }
+}
+
 // Constructor: now takes chassis instead of separate motor groups
 Robot::Robot(lemlib::Chassis& chassis, pros::Motor* intake1, pros::Motor* intake2, pros::Motor* intake3,
              pushback::Piston* piston1, pushback::Piston* piston2, pushback::Piston* piston3, pushback::Piston* piston4,

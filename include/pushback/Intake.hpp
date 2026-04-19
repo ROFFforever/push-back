@@ -56,6 +56,11 @@ class Intake {
          */
         void tall_goal();
         /**
+         * @brief sorta weak, weaker than max but stronger than weak setting
+         * 
+         */
+        void weak_kinda();
+        /**
          * @brief Color sorts intake, uses middle intake to outtake ball
          * @attention meant to be run every cycle in a loop
          */
