@@ -55,9 +55,9 @@ class Piston {
          */
         void toggleFire();
         bool buttonState = false; // Initialize the toggle state
+        bool lastButtonState = false; // Track the previous button state
     private:
         pros::ADIDigitalOut* pneumatic; // piston
-        bool lastButtonState = false; // Track the previous button state
         pros::controller_digital_e_t button;
         pushback::Robot* robot; // can be null because user may not be interesed in registering this for opcontrol
 };

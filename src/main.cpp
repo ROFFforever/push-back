@@ -232,7 +232,7 @@ void waitUntilScore(int maxTime){
     optical.set_led_pwm(100);
     lemlib::Timer timeMax(maxTime);
     while((!robot.detectOpposingColor()) && (!timeMax.isDone())){ //until we see the wrong color just keep waiting/scoring
-        wait(30);
+        wait(15);
     }
     //dont burn it out
     optical.set_led_pwm(0); 
@@ -843,7 +843,7 @@ void skillspt6(){
     }
     chassis.cancelMotion();
     reset_x();
-    chassis.moveToPoint(-44.5, 0.5, 1200, {}, false);
+    chassis.moveToPoint(-44.5, -0.3, 1200, {}, false);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     rightMotors.move_voltage(6000);
     leftMotors.move_voltage(-4000);
@@ -859,7 +859,7 @@ void pickupballs2(){
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     robot.reset_y(false, true, true);
     intake.intake();
-    robot.ram(112,400);
+    robot.ram(111,380);
     robot.ram(90,110);
     leftMotors.move_voltage(2800);
     rightMotors.move_voltage(2800);
@@ -873,8 +873,8 @@ void pickupballs2(){
     rightMotors.move_voltage(100);
     leftMotors.move_voltage(100);
     wait(300);
-    robot.ram(-80, 400);
-    robot.ram(70, 400);
+    robot.ram(-83, 650);
+    robot.ram(70, 1200);
     robot.ram(-90, 1150);
     robot.ram(70, 900);
         chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
@@ -933,7 +933,7 @@ void skillspt8(){
     chassis.waitUntilDone();
     descore.firePiston(false);
     reset_y();
-    chassis.moveToPoint(39, 45, 650, {.forwards=false}, false);
+    chassis.moveToPoint(39, 46.3, 800, {.forwards=false}, false);
     chassis.turnToHeading(90, 600, {}, false);
     descore.firePiston(false);
     chassis.moveToPoint(24, 46.3, 600, {.forwards=false, .minSpeed=1, .earlyExitRange=1}, false); //go into goal
@@ -946,21 +946,24 @@ void skillspt8(){
 void skillspt9(){
     intake.intake();
     score_toggle.firePiston(false);
-    chassis.setPose(25, chassis.getPose().y, chassis.getPose().theta);
+    chassis.setPose(30.5, chassis.getPose().y, chassis.getPose().theta);
     reset_y();
     chassis.moveToPose(70, 46.2, 90, 1800, {.lead=0.28}, true);
     unloader.firePiston(true);
     wait(50);
     reset_y();
     lemlib::Timer maxT(900);
-    while((chassis.getPose().x < 52.7) && (!maxT.isDone())){ 
+    bool stopNow = false;
+    while((chassis.getPose().x < 48) && (!maxT.isDone())){ 
         wait(15);
-        if(maxT.getTimePassed() > 200){
+        if((maxT.getTimePassed() > 200) && (!stopNow) ){
             reset_y();
+            stopNow = true;
         }
     }
+    printf("cancelled movetoPose\n");
     chassis.cancelMotion();
-    robot.ram(45, 1500); //get matchloaders
+    robot.ram(30, 1800); //get matchloaders
     chassis.moveToPoint(27, 46.8, 700, {.forwards=false, .minSpeed=1, .earlyExitRange=1},
                        false); // go back into goal
     chassis.waitUntilDone();
@@ -978,7 +981,7 @@ void park(){
     chassis.moveToPoint(60, 22, 1000, {}, false);
     intake.outake();
     chassis.swingToHeading(170, DriveSide::RIGHT, 450, {}, false);
-    robot.ram(110, 1200); //finish parking
+    robot.ram(110, 1000); //finish parking
 }
 void skills_119(){
     // Starting Position
@@ -1136,7 +1139,7 @@ void firstTrioArcRight(){
 }
 
 void firstTrioArcLeft(){
-    chassis.setPose(-47, -13.5, 90);
+    chassis.setPose(-47, 13.5, 90);
     robot.reset_x(false, false, true);
     robot.reset_y(false, false, true);
     intake.intake();
@@ -1144,7 +1147,46 @@ void firstTrioArcLeft(){
     rightMotors.move_voltage(11000);
     wait(430);
     unloader.firePiston(true);
+}
+void getMatchLoadsSevenBallLeft(){
+           leftMotors.move_voltage(-2000);
+    rightMotors.move_voltage(11000);
+    while(chassis.getPose().theta > -5){
+        wait(15);
+    }
+    int wait_time = 605;
+     leftMotors.move_voltage(11500);
+    rightMotors.move_voltage(7500);
+    wait(wait_time);
 
+    chassis.swingToHeading(271, DriveSide::LEFT, 500, {.maxSpeed=110, .minSpeed=1, .earlyExitRange=2}, false);
+    rightMotors.move_voltage(-1000);
+    leftMotors.move_voltage(-500);
+    wait(100); //stop drift
+    rightMotors.move_voltage(0);
+    leftMotors.move_voltage(0);
+    wait(100);
+    reset_y();
+    reset_x();
+
+
+    chassis.moveToPose(-70, 46.7, 270, 1200, {.minSpeed=50, .earlyExitRange=0.4}, true); //go to matchloader
+      lemlib::Timer maxT(1000);
+           intake.intake();
+    while((chassis.getPose().x > -53.9) && (!maxT.isDone())) wait(15);
+    chassis.cancelMotion();
+    robot.ram(55, 650); //get matchloaders
+}
+void scoreBallsSevenBallLeft(){
+    chassis.moveToPose(-32, 47, 270, 1500, {.forwards=false, .lead=0.3, .minSpeed=10, .earlyExitRange=1}, true);
+    reset_y();
+    chassis.waitUntilDone();
+
+    robot.ram(-115, 150); //allign with long goal
+    score_toggle.firePiston(true);
+    middle_goal.firePiston(true);
+    unloader.firePiston(false);
+    robot.ram(-70, 1100); //give time score balls
 }
 void firstTrioArcLeftM(){
     chassis.setPose(-47, 13.5, 90);
@@ -1224,44 +1266,7 @@ leftMotors.move_voltage(-100);
     wait(1300);
 
 }
-void getMatchLoadsSevenBallLeft(){
-           leftMotors.move_voltage(-2000);
-    rightMotors.move_voltage(11000);
-    while(chassis.getPose().theta < -5){
-        wait(15);
-    }
-    int wait_time = 555;
-     leftMotors.move_voltage(11500);
-    rightMotors.move_voltage(7500);
-    wait(wait_time);
 
-    chassis.swingToHeading(267, DriveSide::RIGHT, 500, {.maxSpeed=110, .minSpeed=1, .earlyExitRange=2}, false);
-    while(chassis.getPose().theta < 270) wait(15);
-    reset_y();
-    reset_x();
-
-
-    //brake motors
-        leftMotors.move_voltage(-1500);
-    rightMotors.move_voltage(-1500);
-    wait(150);
-leftMotors.move_voltage(-100);
-    rightMotors.move_voltage(-100);
-
-
-
-    chassis.moveToPose(-70, 46.8, 270, 1400, {.lead=0.28, .maxSpeed=80, .minSpeed=50, .earlyExitRange=1}, true);
-    lemlib::Timer count(150000);
-    while((chassis.getPose().x > -48)){
-        if(count.getTimePassed() > 150) reset_y();
-        wait(10);
-    }
-
-    chassis.cancelMotion();
-    printf("CANCELLED MOVETOPOSE\n");
-    robot.ram(55, 400);
-    robot.ram(70, 350);
-}
 void scoreBallsSevenBallRight(){
     chassis.moveToPose(-32, -47, 270, 1500, {.forwards=false, .lead=0.3, .minSpeed=10, .earlyExitRange=1}, true);
     reset_y();
@@ -1272,23 +1277,13 @@ void scoreBallsSevenBallRight(){
     unloader.firePiston(false);
     robot.ram(-70, 900); //give time score balls
 }
-void scoreBallsSevenBallLeft(){
-    chassis.moveToPose(-32, 47, 270, 1500, {.forwards=false, .lead=0.3, .minSpeed=10, .earlyExitRange=1}, true);
-    reset_y();
-    chassis.waitUntilDone();
 
-    robot.ram(-115, 150); //allign with long goal
-    score_toggle.firePiston(true);
-    middle_goal.firePiston(true);
-    unloader.firePiston(false);
-    robot.ram(-70, 900); //give time score balls
-}
 void sevenBallSwingRight(){
     //swing out of goal and push
     leftMotors.move_voltage(-3500);
     rightMotors.move_voltage(8000);
     lemlib::Timer maxTime(1000);
-    while((chassis.getPose().theta > 220) && (!maxTime.isDone())){
+    while((chassis.getPose().theta > -140) && (!maxTime.isDone())){
     wait(10);
     }
     score_toggle.firePiston(false); // close scoring hood
@@ -1298,12 +1293,16 @@ void sevenBallSwingRight(){
     chassis.turnToHeading(270, 600, {.minSpeed=10, .earlyExitRange=1}, false);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     lemlib::Timer waitForReset(100000);
-    while(chassis.getPose().x < -16.3){
+    bool thingy = false;
+    while(chassis.getPose().x < -14.3){
         leftMotors.move_voltage(-6000);
         rightMotors.move_voltage(-6000);
-        if(waitForReset.getTimePassed() > 300){ reset_x(); waitForReset.reset(); };
+        if((waitForReset.getTimePassed() > 300) && !thingy){ reset_x(); thingy = true; };
         wait(15);
     }
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    leftMotors.move_voltage(0);
+        rightMotors.move_voltage(0);
     reset_x();
     
 }
@@ -1316,6 +1315,7 @@ void sevenBallBlueRight(){
 }
 
 void sevenBallBlueLeft(){
+    middle_goal.firePiston(true);
     firstTrioArcLeft();
     getMatchLoadsSevenBallLeft();
     scoreBallsSevenBallLeft();
@@ -1323,26 +1323,29 @@ void sevenBallBlueLeft(){
 }
 
 void grabSecondBallLeft(){
-    chassis.moveToPoint(-9.3, 34, 790, {.forwards=true, .minSpeed=1, .earlyExitRange=0.5}, true);
+    chassis.moveToPoint(-8.3, 33.2, 790, {.forwards=true, .minSpeed=1, .earlyExitRange=0.5}, true);
     wait(175);
     unloader.firePiston(false);
     wait(100);
     reset_y();
     chassis.waitUntilDone();
     reset_y();
-    chassis.swingToPoint(-4, 57, DriveSide::LEFT, 250, {.maxSpeed=110}, true);
+    chassis.turnToHeading(6, 250, {.maxSpeed=110}, true);
     chassis.waitUntilDone();
-   
-    robot.ram(80, 50); //go a bit forward
-     unloader.firePiston(true);
-     robot.ram(80, 250);
-     wait(400); //wait to grab balls
+    robot.ram(60, 180);
+    unloader.firePiston(true);
+    leftMotors.move_voltage(500);
+    rightMotors.move_voltage(2000);
+    wait(100);
+    chassis.turnToHeading(-15, 300, {}, false);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+     wait(300); //wait to grab balls
     reset_y();
+    unloader.firePiston(false);
 }
 void grabSecondBallRight(){
     chassis.moveToPoint(-9.3, -34, 790, {.forwards=true, .minSpeed=1, .earlyExitRange=0.5}, true);
     wait(175);
-    unloader.firePiston(false);
     wait(100);
     reset_y();
     chassis.waitUntilDone();
@@ -1361,7 +1364,7 @@ void goBackToGoalLeft4_5(){
     wait(200);
 
     //arc backwards
-    leftMotors.move_voltage(-400);
+    leftMotors.move_voltage(-700);
     rightMotors.move_voltage(-7500);
     while(chassis.getPose().theta < 35) wait(15);
     leftMotors.move_voltage(0);
@@ -1374,6 +1377,7 @@ void goBackToGoalLeft4_5(){
 
     //swing into goal
     chassis.swingToHeading(268, DriveSide::LEFT, 650, {.direction=lemlib::AngularDirection::CW_CLOCKWISE, .minSpeed=50, .earlyExitRange=1}, true);
+    descore.firePiston(false); //get out of way for goal
     while(chassis.getPose().theta < 260) wait(15);
     chassis.cancelMotion();
 
@@ -1386,9 +1390,9 @@ void goBackToGoalLeft4_5(){
     reset_y();
 
     //go into goal
-    chassis.moveToPoint(-19, 47, 800, {.forwards=false, .minSpeed=80}, false);
+    chassis.moveToPoint(-19, 47, 600, {.forwards=false, .minSpeed=80}, false);
     score_toggle.firePiston(true);
-    wait(1500); //score balls
+    wait(900); //score balls
 }
 void goBackToGoalRight4_5(){
     unloader.firePiston(false);
@@ -1432,13 +1436,17 @@ void getMatchLoadAndGoToMiddleLeft(){
     wait(100);
     unloader.firePiston(true);
     score_toggle.firePiston(false);
+    intake.outake();
+    wait(100);
+    intake.stop();
     while(chassis.getPose().x > -40) wait(15);
     chassis.cancelMotion();
-    chassis.moveToPoint(-67, 46.4, 450, {.maxSpeed=60}, true); //go for matchloaders
-    reset_y();
-    chassis.waitUntilDone();
-
-    robot.ram(80, 400); //get three matchloads
+    chassis.moveToPose(-70, 46.4, 270, 450, {.maxSpeed=60}, true); //go for matchloaders
+    lemlib::Timer maxT(1000);
+    intake.intake();
+    while((chassis.getPose().x > -52.7) && (!maxT.isDone())) wait(15);
+    chassis.cancelMotion();
+    robot.ram(20, 1350); //get all matchloaders
     moveStraight(-8, 350, {}, false);
     chassis.turnToHeading(270, 150, {}, false);
     robot.reset_x(false, true, true);
@@ -1448,9 +1456,19 @@ void getMatchLoadAndGoToMiddleLeft(){
     intake.stop();
     chassis.turnToPoint(-10, 10, 400, {.forwards=false}, true);
     chassis.moveToPoint(-10, 10, 1600, {.forwards=false}, true);
-    while(chassis.getPose().x < -13.5) wait(15); //once past certain point prefire midgoal
-    middle_goal.firePiston(true);
-    intake.intake();
+    while(chassis.getPose().x < -11) wait(15); //once past certain point prefire midgoal
+    middle_goal.firePiston(false);
+    unloader.firePiston(false);
+    intake_1.move_voltage(5000);
+    intake_2.move_voltage(-5000);
+    waitUntilScore(1300);
+    intake.outake();
+    moveStraight(9, 600, {}, true);
+    wait(100);
+    descore.firePiston(true);
+    chassis.waitUntilDone();
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    robot.ram(-70, 1000);
 }
 void getMatchLoadAndGoToMiddleRight(){
     intake.intake();
@@ -1508,6 +1526,7 @@ void matchloadLowGoal(){
     intake.outake();
 }
 void fivePlusFourBlueLeft(){
+    middle_goal.firePiston(true);
     firstTrioArcLeftM();
     grabSecondBallLeft();
     goBackToGoalLeft4_5();
@@ -1543,12 +1562,13 @@ void driveOneINch() { moveStraight(5, 250, {}, false); }
 void autonomous() {
     pros::Task log(logData); // log data
     // awp();
-    // sevenBallBlueLeft();
+    sevenBallBlueLeft();
+    // sevenBallBlueRight();
     // fivePlusFourBlueLeft();
-    sevenBallBlueRight();
+    // skills_119();
     // fivePlusFourBlueRight();
     // threePlusFourBlueRight();
-    // fivePlusFourBlueLeft();
+    //fivePlusFourBlueLeft();
     // af();
     //skills_119();
 
@@ -1596,6 +1616,10 @@ void opcontrol() {
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
 
+         //make sure only one of these pistons are fired so that we never go out of size
+        if(unloader.buttonState && descore.buttonState){
+            descore.firePiston(false);
+        }
         intake.runIntake();
         unloader.toggleFire();
         descore.toggleFire();
@@ -1603,6 +1627,7 @@ void opcontrol() {
         score_toggle.toggleFire();
         // // delay to save resources
         intake.color_sort();
+
         pros::delay(10);
     }
 }
